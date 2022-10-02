@@ -1,0 +1,118 @@
+#- id: '1610995484499'
+#  alias: NFC Studio Lights On
+#  description: ''
+#  trigger:
+#  - platform: tag
+#    tag_id: a4130791-00ab-4279-99ee-f741ab994ab8
+#  condition:
+#  - condition: state
+#    entity_id: light.studio_lights
+#    state: 'off'
+#  action:
+#  - scene: scene.full_on
+#  mode: single
+#- id: '1610995512943'
+#  alias: NFC Studio Lights Off
+#  description: ''
+#  trigger:
+#  - platform: tag
+#    tag_id: a4130791-00ab-4279-99ee-f741ab994ab8
+#  condition:
+#  - condition: state
+#    entity_id: light.studio_lights
+#    state: 'on'
+#  action:
+#  - scene: scene.full_off
+#  mode: single
+- id: '1610995679644'
+  alias: Leaving Home
+  description: ''
+  trigger:
+  - platform: zone
+    entity_id: person.sanjit
+    zone: zone.home
+    event: leave
+  condition: []
+  action:
+  - scene: scene.full_off
+  - service: media_player.turn_off
+    data: {}
+    entity_id: media_player.49_tcl_roku_tv
+  - service: media_player.media_pause
+    data: {}
+    entity_id:
+    - media_player.actually_speakers
+    - media_player.all_speakers
+    - media_player.bedroom_speaker
+    - media_player.bedroom_tv
+    - media_player.kitchen_speaker
+    - media_player.living_room_tv
+  mode: single
+- id: '1610995780479'
+  alias: Arriving Home
+  description: ''
+  trigger:
+  - platform: zone
+    entity_id: person.sanjit
+    zone: zone.home
+    event: enter
+  condition:
+  - condition: or
+    conditions:
+    - condition: sun
+      before: sunrise
+      before_offset: 00:45
+    - condition: sun
+      after: sunset
+      after_offset: -00:45
+    - condition: state
+      entity_id: weather.philadelphia
+      state: cloudy,fog,hail,lightning,lightning-rainy,pouring,rainy,snowy,snowy-rainy
+  action:
+  - scene: scene.full_on
+  mode: single
+- id: '1610995829321'
+  alias: Lights at Sunset
+  description: ''
+  trigger:
+  - platform: sun
+    event: sunset
+    offset: -00:30
+  condition:
+  - condition: zone
+    entity_id: person.sanjit
+    zone: zone.home
+  action:
+  - scene: scene.full_on
+  mode: single
+- alias: Play/Pause
+  description: ''
+  trigger:
+  - platform: event
+    event_type: ios.action_fired
+    event_data:
+      actionID: play_pause
+  action:
+    service: media_player.media_play_pause
+    entity_id: all
+- alias: Toggle Color Sync
+  description: ''
+  trigger:
+  - platform: event
+    event_type: ios.action_fired
+    event_data:
+      actionID: toggle_color_sync
+  action:
+    service: input_boolean.toggle
+    entity_id: input_boolean.sync_what_s_playing_to_lights
+- alias: Toggle Game Color Sync
+  description: ''
+  trigger:
+  - platform: event
+    event_type: ios.action_fired
+    event_data:
+      actionID: toggle_game_color_sync
+  action:
+    service: input_boolean.toggle
+    entity_id: input_boolean.sync_game_to_lights
+

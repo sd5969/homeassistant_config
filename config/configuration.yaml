@@ -1,0 +1,169 @@
+
+# Configure a default setup of Home Assistant (frontend, api, etc)
+default_config:
+
+frontend:
+    themes: !include_dir_merge_named themes
+
+# Text to speech
+tts:
+  - platform: google_translate
+
+group: !include groups.yaml
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
+
+# http:
+#   ssl_certificate: /config/certs/fullchain.pem
+#   ssl_key: /config/certs/privkey.pem
+
+spotify:
+    client_id: !secret SPOTIFY_CLIENT_ID
+    client_secret: !secret SPOTIFY_CLIENT_SECRET
+
+recorder:
+    purge_keep_days: 2
+
+light:
+  - platform: switch
+    name: Desk Lights
+    entity_id: switch.desk_lights
+  - platform: switch
+    name: String Lights
+    entity_id: switch.string_lights
+  - platform: group
+    name: Living Room Lights
+    entities:
+      - light.living_color_lamp_1
+      - light.living_color_lamp_2
+      - light.living_color_lamp_3
+      - light.string_lights
+      - light.desk_lights
+  - platform: group
+    name: Dining Lights
+    entities:
+      - light.living_color_lamp_1
+      - light.living_color_lamp_2
+      - light.living_color_lamp_3
+
+homeassistant:
+    media_dirs:
+        local: /config/media
+
+camera:
+  - platform: mjpeg
+    mjpeg_url: http://10.0.0.161:8081/cam_pic_new.php
+    username: "picam"
+    password: "opensesame"
+    name: "Window"
+
+sensor:
+#   - platform: scrape
+#     resource: http://10.0.0.161:1111/noise.html
+#     select: "span"
+#     name: "AC Noise"
+
+  - platform: template
+    sensors:
+      ac_noise_bool:
+        value_template: "{{ states('sensor.ac_noise') | float > states('input_number.noise_detection_threshold') | float }}" # use > 1.5 for summer/AC
+        friendly_name: "AC Noise (Boolean)"
+      living_room_tv_cc_volume:
+        value_template: "{{ state_attr('media_player.living_room_tv', 'volume_level') | float }}"
+        friendly_name: "Living Room TV Chromecast (Volume)"
+      bedroom_speaker_volume:
+        value_template: "{{ state_attr('media_player.bedroom_speaker', 'volume_level') | float }}"
+        friendly_name: "Bedroom Speaker (Volume)"
+
+#   - platform: scrape
+#     resource: http://10.0.0.91:1111/image_url.html
+#     select: "span"
+#     name: "Game Screenshot URL"
+
+multiscrape:
+  - resource: http://10.0.0.161:1111/noise.html
+    scan_interval: 10 # seconds
+    sensor:
+      - unique_id: ac_noise
+        name: "AC Noise"
+        select: "span"
+  - resource: http://10.0.0.91:1111/image_url.html
+    scan_interval: 10 # seconds
+    sensor:
+      - unique_id: game_screenshot_url
+        name: "Game Screenshot URL"
+        select: "span"
+
+template:
+  - binary_sensor:
+      name: "Game Color Sync Active"
+      state: "{{ states('input_boolean.sync_game_to_lights') }}"
+      attributes:
+        entity_picture: >
+          {% if states('input_boolean.sync_game_to_lights') == 'on' %}
+          {{ states('sensor.game_screenshot_url') }}
+          {% else %}
+          
+          {% endif %}
+
+ios:
+  actions:
+    - name: brightness_up
+      background_color: "#ffffaa"
+      label:
+        text: "Brightness Up"
+        color: "#000000"
+      icon:
+        icon: lightbulb-on
+        color: "#000000"
+    - name: brightness_down
+      background_color: "#cccc44"
+      label:
+        text: "Brightness Down"
+        color: "#000000"
+      icon:
+        icon: lightbulb
+        color: "#000000"
+    - name: volume_up
+      background_color: "#ccccff"
+      label:
+        text: "Volume Up"
+        color: "#000000"
+      icon:
+        icon: volume-medium
+        color: "#000000"
+    - name: volume_down
+      background_color: "#777799"
+      label:
+        text: "Volume Down"
+        color: "#000000"
+      icon:
+        icon: volume-low
+        color: "#000000"
+
+    - name: play_pause
+      background_color: "#a9a9a9"
+      label:
+        text: "Play/Pause"
+        color: "#000000"
+      icon:
+        icon: play-pause
+        color: "#000000"
+    - name: toggle_color_sync
+      background_color: "#ff9191"
+      label:
+        text: "Toggle Color Sync"
+        color: "#000000"
+      icon:
+        icon: palette
+        color: "#000000"
+    - name: toggle_game_color_sync
+      background_color: "#deff91"
+      label:
+        text: "Toggle Game Color Sync"
+        color: "#000000"
+      icon:
+        icon: google-controller
+        color: "#000000"
+

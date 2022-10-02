@@ -1,0 +1,6 @@
+certs
+home-assistant.log
+secrets.yaml
+.storage
+__pycache__
+media

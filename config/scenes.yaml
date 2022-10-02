@@ -1,0 +1,250 @@
+- id: '1610994719610'
+  name: Theater Mode
+  entities:
+    light.string_lights:
+      supported_color_modes:
+      - onoff
+      color_mode: onoff
+      friendly_name: String Lights
+      supported_features: 0
+      state: 'on'
+    input_boolean.sync_what_s_playing_to_lights:
+      editable: true
+      icon: mdi:palette
+      friendly_name: Sync What's Playing to Lights?
+      state: 'off'
+    light.desk_lights:
+      supported_color_modes:
+      - onoff
+      friendly_name: Desk Lights
+      supported_features: 0
+      state: 'off'
+    light.dining_lights:
+      min_mireds: 153
+      max_mireds: 500
+      supported_color_modes:
+      - color_temp
+      - xy
+      entity_id:
+      - light.living_color_lamp_1
+      - light.living_color_lamp_2
+      - light.living_color_lamp_3
+      icon: mdi:lightbulb-group
+      friendly_name: Dining Lights
+      supported_features: 40
+      state: 'off'
+  icon: mdi:filmstrip
+- id: '1610994765804'
+  name: Full On
+  entities:
+    input_boolean.sync_what_s_playing_to_lights:
+      editable: true
+      icon: mdi:palette
+      friendly_name: Sync What's Playing to Lights?
+      state: 'off'
+    light.desk_white_lamp_1:
+      supported_color_modes:
+      - brightness
+      color_mode: brightness
+      brightness: 255
+      mode: normal
+      dynamics: none
+      friendly_name: Bedroom white lamp 1
+      supported_features: 40
+      state: 'on'
+    light.living_room_lights:
+      min_mireds: 153
+      max_mireds: 500
+      supported_color_modes:
+      - color_temp
+      - onoff
+      - xy
+      color_mode: xy
+      brightness: 255
+      hs_color:
+      - 38.438
+      - 50.196
+      rgb_color:
+      - 255
+      - 209
+      - 127
+      xy_color:
+      - 0.4498
+      - 0.4059
+      entity_id:
+      - light.living_color_lamp_1
+      - light.living_color_lamp_2
+      - light.living_color_lamp_3
+      - light.string_lights
+      - light.desk_lights
+      icon: mdi:lightbulb-group
+      friendly_name: Living Room Lights
+      supported_features: 40
+      state: 'on'
+  icon: mdi:lightbulb-on-outline
+- id: '1610994787395'
+  name: Full Off
+  entities:
+    input_boolean.sync_what_s_playing_to_lights:
+      editable: true
+      icon: mdi:palette
+      friendly_name: Sync What's Playing to Lights?
+      state: 'off'
+    light.desk_white_lamp_1:
+      supported_color_modes:
+      - brightness
+      mode: normal
+      dynamics: none
+      friendly_name: Bedroom white lamp 1
+      supported_features: 40
+      state: 'off'
+    light.living_room_lights:
+      min_mireds: 153
+      max_mireds: 500
+      supported_color_modes:
+      - color_temp
+      - onoff
+      - xy
+      entity_id:
+      - light.living_color_lamp_1
+      - light.living_color_lamp_2
+      - light.living_color_lamp_3
+      - light.string_lights
+      - light.desk_lights
+      icon: mdi:lightbulb-group
+      friendly_name: Living Room Lights
+      supported_features: 40
+      state: 'off'
+  icon: mdi:lightbulb-off-outline
+- id: '1610994850307'
+  name: Work
+  entities:
+    light.desk_lights:
+      supported_color_modes:
+      - onoff
+      color_mode: onoff
+      friendly_name: Desk Lights
+      supported_features: 0
+      state: 'on'
+    light.string_lights:
+      supported_color_modes:
+      - onoff
+      friendly_name: String Lights
+      supported_features: 0
+      state: 'off'
+    input_boolean.sync_what_s_playing_to_lights:
+      editable: true
+      icon: mdi:palette
+      friendly_name: Sync What's Playing to Lights?
+      state: 'off'
+    light.dining_lights:
+      min_mireds: 153
+      max_mireds: 500
+      supported_color_modes:
+      - color_temp
+      - xy
+      entity_id:
+      - light.living_color_lamp_1
+      - light.living_color_lamp_2
+      - light.living_color_lamp_3
+      icon: mdi:lightbulb-group
+      friendly_name: Dining Lights
+      supported_features: 40
+      state: 'off'
+  icon: mdi:briefcase-outline
+- id: '1619984401301'
+  name: Party
+  entities:
+    input_boolean.sync_what_s_playing_to_lights:
+      editable: true
+      icon: mdi:palette
+      friendly_name: Sync What's Playing to Lights?
+      state: 'on'
+    light.desk_lights:
+      supported_color_modes:
+      - onoff
+      friendly_name: Desk Lights
+      supported_features: 0
+      state: 'off'
+    light.dining_lights:
+      min_mireds: 153
+      max_mireds: 500
+      supported_color_modes:
+      - color_temp
+      - xy
+      color_mode: xy
+      brightness: 43
+      hs_color:
+      - 38.438
+      - 50.196
+      rgb_color:
+      - 255
+      - 209
+      - 127
+      xy_color:
+      - 0.4498
+      - 0.4059
+      entity_id:
+      - light.living_color_lamp_1
+      - light.living_color_lamp_2
+      - light.living_color_lamp_3
+      icon: mdi:lightbulb-group
+      friendly_name: Dining Lights
+      supported_features: 40
+      state: 'on'
+    light.string_lights:
+      supported_color_modes:
+      - onoff
+      color_mode: onoff
+      friendly_name: String Lights
+      supported_features: 0
+      state: 'on'
+  icon: mdi:cake
+- id: '1621908839349'
+  name: Relax
+  entities:
+    input_boolean.sync_what_s_playing_to_lights:
+      editable: true
+      icon: mdi:palette
+      friendly_name: Sync What's Playing to Lights?
+      state: 'off'
+    light.desk_lights:
+      supported_color_modes:
+      - onoff
+      friendly_name: Desk Lights
+      supported_features: 0
+      state: 'off'
+    light.dining_lights:
+      min_mireds: 153
+      max_mireds: 500
+      supported_color_modes:
+      - color_temp
+      - xy
+      color_mode: xy
+      brightness: 128
+      hs_color:
+      - 38.438
+      - 50.196
+      rgb_color:
+      - 255
+      - 209
+      - 127
+      xy_color:
+      - 0.4498
+      - 0.4059
+      entity_id:
+      - light.living_color_lamp_1
+      - light.living_color_lamp_2
+      - light.living_color_lamp_3
+      icon: mdi:lightbulb-group
+      friendly_name: Dining Lights
+      supported_features: 40
+      state: 'on'
+    light.string_lights:
+      supported_color_modes:
+      - onoff
+      color_mode: onoff
+      friendly_name: String Lights
+      supported_features: 0
+      state: 'on'
+  icon: mdi:spa
