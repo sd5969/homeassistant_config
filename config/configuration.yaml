@@ -18,9 +18,9 @@ scene: !include scenes.yaml
 #   ssl_certificate: /config/certs/fullchain.pem
 #   ssl_key: /config/certs/privkey.pem
 
-spotify:
-    client_id: !secret SPOTIFY_CLIENT_ID
-    client_secret: !secret SPOTIFY_CLIENT_SECRET
+# spotify:
+#     client_id: !secret SPOTIFY_CLIENT_ID
+#     client_secret: !secret SPOTIFY_CLIENT_SECRET
 
 recorder:
     purge_keep_days: 2
@@ -41,7 +41,7 @@ light:
       - light.string_lights
       - light.desk_lights
   - platform: group
-    name: Dining Lights
+    name: Black Lamp
     entities:
       - light.living_color_lamp_1
       - light.living_color_lamp_2
@@ -51,12 +51,12 @@ homeassistant:
     media_dirs:
         local: /config/media
 
-camera:
-  - platform: mjpeg
-    mjpeg_url: http://10.0.0.161:8081/cam_pic_new.php
-    username: "picam"
-    password: "opensesame"
-    name: "Window"
+# camera:
+#   - platform: mjpeg
+#     mjpeg_url: http://10.0.0.161:8081/cam_pic_new.php
+#     username: "picam"
+#     password: "opensesame"
+#     name: "Window"
 
 sensor:
 #   - platform: scrape
@@ -64,48 +64,48 @@ sensor:
 #     select: "span"
 #     name: "AC Noise"
 
-  - platform: template
-    sensors:
-      ac_noise_bool:
-        value_template: "{{ states('sensor.ac_noise') | float > states('input_number.noise_detection_threshold') | float }}" # use > 1.5 for summer/AC
-        friendly_name: "AC Noise (Boolean)"
-      living_room_tv_cc_volume:
-        value_template: "{{ state_attr('media_player.living_room_tv', 'volume_level') | float }}"
-        friendly_name: "Living Room TV Chromecast (Volume)"
-      bedroom_speaker_volume:
-        value_template: "{{ state_attr('media_player.bedroom_speaker', 'volume_level') | float }}"
-        friendly_name: "Bedroom Speaker (Volume)"
+#   - platform: template
+#     sensors:
+#       ac_noise_bool:
+#         value_template: "{{ states('sensor.ac_noise') | float > states('input_number.noise_detection_threshold') | float }}" # use > 1.5 for summer/AC
+#         friendly_name: "AC Noise (Boolean)"
+#       living_room_tv_cc_volume:
+#         value_template: "{{ state_attr('media_player.living_room_tv', 'volume_level') | float }}"
+#         friendly_name: "Living Room TV Chromecast (Volume)"
+#       bedroom_speaker_volume:
+#         value_template: "{{ state_attr('media_player.bedroom_speaker', 'volume_level') | float }}"
+#         friendly_name: "Bedroom Speaker (Volume)"
 
 #   - platform: scrape
 #     resource: http://10.0.0.91:1111/image_url.html
 #     select: "span"
 #     name: "Game Screenshot URL"
 
-multiscrape:
-  - resource: http://10.0.0.161:1111/noise.html
-    scan_interval: 10 # seconds
-    sensor:
-      - unique_id: ac_noise
-        name: "AC Noise"
-        select: "span"
-  - resource: http://10.0.0.91:1111/image_url.html
-    scan_interval: 10 # seconds
-    sensor:
-      - unique_id: game_screenshot_url
-        name: "Game Screenshot URL"
-        select: "span"
+# multiscrape:
+#   - resource: http://10.0.0.161:1111/noise.html
+#     scan_interval: 10 # seconds
+#     sensor:
+#       - unique_id: ac_noise
+#         name: "AC Noise"
+#         select: "span"
+#   - resource: http://10.0.0.91:1111/image_url.html
+#     scan_interval: 10 # seconds
+#     sensor:
+#       - unique_id: game_screenshot_url
+#         name: "Game Screenshot URL"
+#         select: "span"
 
-template:
-  - binary_sensor:
-      name: "Game Color Sync Active"
-      state: "{{ states('input_boolean.sync_game_to_lights') }}"
-      attributes:
-        entity_picture: >
-          {% if states('input_boolean.sync_game_to_lights') == 'on' %}
-          {{ states('sensor.game_screenshot_url') }}
-          {% else %}
-          
-          {% endif %}
+# template:
+#   - binary_sensor:
+#       name: "Game Color Sync Active"
+#       state: "{{ states('input_boolean.sync_game_to_lights') }}"
+#       attributes:
+#         entity_picture: >
+#           {% if states('input_boolean.sync_game_to_lights') == 'on' %}
+#           {{ states('sensor.game_screenshot_url') }}
+#           {% else %}
+#           
+#           {% endif %}
 
 ios:
   actions:
@@ -158,12 +158,12 @@ ios:
       icon:
         icon: palette
         color: "#000000"
-    - name: toggle_game_color_sync
-      background_color: "#deff91"
-      label:
-        text: "Toggle Game Color Sync"
-        color: "#000000"
-      icon:
-        icon: google-controller
-        color: "#000000"
+#    - name: toggle_game_color_sync
+#      background_color: "#deff91"
+#      label:
+#        text: "Toggle Game Color Sync"
+#        color: "#000000"
+#      icon:
+#        icon: google-controller
+#        color: "#000000"
 

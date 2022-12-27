@@ -37,12 +37,13 @@ from homeassistant.const import HTTP_DIGEST_AUTHENTICATION
 
 from .const import CONF_ATTR
 from .const import CONF_FORM_INPUT
+from .const import CONF_FORM_INPUT_FILTER
 from .const import CONF_FORM_RESOURCE
 from .const import CONF_FORM_RESUBMIT_ERROR
 from .const import CONF_FORM_SELECT
 from .const import CONF_FORM_SUBMIT
 from .const import CONF_FORM_SUBMIT_ONCE
-from .const import CONF_INDEX
+from .const import CONF_LOG_RESPONSE
 from .const import CONF_ON_ERROR
 from .const import CONF_ON_ERROR_DEFAULT
 from .const import CONF_ON_ERROR_LOG
@@ -73,6 +74,7 @@ FORM_SUBMIT_SCHEMA = {
     vol.Optional(CONF_FORM_RESOURCE): cv.string,
     vol.Required(CONF_FORM_SELECT): cv.string,
     vol.Optional(CONF_FORM_INPUT): vol.Schema({cv.string: cv.string}),
+    vol.Optional(CONF_FORM_INPUT_FILTER, default=[]): cv.ensure_list,
     vol.Optional(CONF_FORM_SUBMIT_ONCE, default=False): cv.boolean,
     vol.Optional(CONF_FORM_RESUBMIT_ERROR, default=True): cv.boolean,
 }
@@ -88,12 +90,13 @@ INTEGRATION_SCHEMA = {
     vol.Optional(CONF_METHOD, default=DEFAULT_METHOD): vol.In(METHODS),
     vol.Optional(CONF_USERNAME): cv.string,
     vol.Optional(CONF_PASSWORD): cv.string,
-    vol.Optional(CONF_PAYLOAD): cv.string,
+    vol.Optional(CONF_PAYLOAD): cv.template,
     vol.Optional(CONF_VERIFY_SSL, default=DEFAULT_VERIFY_SSL): cv.boolean,
     vol.Optional(CONF_TIMEOUT, default=DEFAULT_TIMEOUT): cv.positive_int,
     vol.Optional(CONF_PARSER, default=DEFAULT_PARSER): cv.string,
     vol.Optional(CONF_NAME): cv.string,
     vol.Optional(CONF_SCAN_INTERVAL): cv.time_period,
+    vol.Optional(CONF_LOG_RESPONSE, default=False): cv.boolean,
 }
 
 ON_ERROR_SCHEMA = {
@@ -114,7 +117,6 @@ SELECTOR_SCHEMA = {
     vol.Optional(CONF_SELECT): cv.template,
     vol.Optional(CONF_SELECT_LIST): cv.template,
     vol.Optional(CONF_ATTR): cv.string,
-    vol.Optional(CONF_INDEX, default=0): cv.positive_int,
     vol.Optional(CONF_VALUE_TEMPLATE): cv.template,
     vol.Optional(CONF_ON_ERROR): vol.Schema(ON_ERROR_SCHEMA),
 }
