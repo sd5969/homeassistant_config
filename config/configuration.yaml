@@ -109,6 +109,86 @@ sensor:
 
 ios:
   actions:
+    - name: bedroom_off
+      background_color: "#000000"
+      label:
+        text: "Bedroom Off"
+        color: "#ddbe00"
+      icon:
+        icon: bed
+        color: "#ddbe00"
+    - name: bedroom_on
+      background_color: "#ddbe00"
+      label:
+        text: "Bedroom On"
+        color: "#000000"
+      icon:
+        icon: bed-empty
+        color: "#000000"
+    - name: full_off
+      background_color: "#000000"
+      label:
+        text: "Full Off"
+        color: "#ff4f00"
+      icon:
+        icon: lightbulb-off-outline
+        color: "#ff4f00"
+    - name: full_on
+      background_color: "#ff4f00"
+      label:
+        text: "Full On"
+        color: "#000000"
+      icon:
+        icon: lightbulb-on-outline
+        color: "#000000"
+    - name: living_room_off
+      background_color: "#000000"
+      label:
+        text: "Living Room Off"
+        color: "#00bb84"
+      icon:
+        icon: lamps-outline
+        color: "#00bb84"
+    - name: living_room_on
+      background_color: "#00bb84"
+      label:
+        text: "Living Room On"
+        color: "#000000"
+      icon:
+        icon: lamps
+        color: "#000000"
+    - name: dining
+      background_color: "#00bb11"
+      label:
+        text: "Dining"
+        color: "#000000"
+      icon:
+        icon: silverware-fork-knife
+        color: "#000000"
+    - name: relax
+      background_color: "#00c0e3"
+      label:
+        text: "Relax"
+        color: "#000000"
+      icon:
+        icon: spa
+        color: "#000000"
+    - name: theater_mode
+      background_color: "#c000d5"
+      label:
+        text: "Theater"
+        color: "#ffffff"
+      icon:
+        icon: filmstrip
+        color: "#ffffff"
+    - name: work
+      background_color: "#ff7200"
+      label:
+        text: "Work"
+        color: "#ffffff"
+      icon:
+        icon: briefcase-outline
+        color: "#ffffff"
     - name: brightness_up
       background_color: "#ffffaa"
       label:
@@ -141,7 +221,6 @@ ios:
       icon:
         icon: volume-low
         color: "#000000"
-
     - name: play_pause
       background_color: "#a9a9a9"
       label:

@@ -207,3 +207,114 @@
     target:
       entity_id: vacuum.robovac
   mode: single
+
+- alias: bedroom_off
+  initial_state: true
+  trigger:
+    - platform: event
+      event_type: ios.action_fired
+      event_data:
+        actionName: bedroom_off
+  action:
+    - service: scene.turn_on
+      target:
+        entity_id: scene.bedroom_off
+- alias: bedroom_on
+  initial_state: true
+  trigger:
+    - platform: event
+      event_type: ios.action_fired
+      event_data:
+        actionName: bedroom_on
+  action:
+    - service: scene.turn_on
+      target:
+        entity_id: scene.bedroom_on
+- alias: full_off
+  initial_state: true
+  trigger:
+    - platform: event
+      event_type: ios.action_fired
+      event_data:
+        actionName: full_off
+  action:
+    - service: scene.turn_on
+      target:
+        entity_id: scene.full_off
+- alias: full_on
+  initial_state: true
+  trigger:
+    - platform: event
+      event_type: ios.action_fired
+      event_data:
+        actionName: full_on
+  action:
+    - service: scene.turn_on
+      target:
+        entity_id: scene.full_on
+- alias: living_room_off
+  initial_state: true
+  trigger:
+    - platform: event
+      event_type: ios.action_fired
+      event_data:
+        actionName: living_room_off
+  action:
+    - service: scene.turn_on
+      target:
+        entity_id: scene.living_room_off
+- alias: living_room_on
+  initial_state: true
+  trigger:
+    - platform: event
+      event_type: ios.action_fired
+      event_data:
+        actionName: living_room_on
+  action:
+    - service: scene.turn_on
+      target:
+        entity_id: scene.living_room_on
+- alias: dining
+  initial_state: true
+  trigger:
+    - platform: event
+      event_type: ios.action_fired
+      event_data:
+        actionName: dining
+  action:
+    - service: scene.turn_on
+      target:
+        entity_id: scene.dining
+- alias: relax
+  initial_state: true
+  trigger:
+    - platform: event
+      event_type: ios.action_fired
+      event_data:
+        actionName: relax
+  action:
+    - service: scene.turn_on
+      target:
+        entity_id: scene.relax
+- alias: theater
+  initial_state: true
+  trigger:
+    - platform: event
+      event_type: ios.action_fired
+      event_data:
+        actionName: theater_mode
+  action:
+    - service: scene.turn_on
+      target:
+        entity_id: scene.theater_mode
+- alias: work
+  initial_state: true
+  trigger:
+    - platform: event
+      event_type: ios.action_fired
+      event_data:
+        actionName: work
+  action:
+    - service: scene.turn_on
+      target:
+        entity_id: scene.work

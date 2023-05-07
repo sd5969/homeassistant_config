@@ -321,21 +321,23 @@
   name: Living Room Off
   entities:
     light.living_room_lights:
-      min_mireds: 153
-      max_mireds: 500
       supported_color_modes:
       - color_temp
       - onoff
       - xy
+      icon: mdi:lightbulb-group
+      friendly_name: Living Room Lights
+      supported_features: 40
+      min_color_temp_kelvin: 2000
+      max_color_temp_kelvin: 6535
+      min_mireds: 153
+      max_mireds: 500
       entity_id:
       - light.living_color_lamp_1
       - light.living_color_lamp_2
       - light.living_color_lamp_3
       - light.string_lights
       - light.desk_lights
-      icon: mdi:lightbulb-group
-      friendly_name: Living Room Lights
-      supported_features: 40
       state: 'off'
     media_player.sanjits_lg_tv:
       source_list:
@@ -344,11 +346,6 @@
       device_class: tv
       friendly_name: Sanjit’s LG TV
       supported_features: 24381
-      state: 'off'
-    media_player.living_room_speaker:
-      device_class: speaker
-      friendly_name: Living Room speaker
-      supported_features: 152461
       state: 'off'
   icon: mdi:lamps-outline
   metadata:
