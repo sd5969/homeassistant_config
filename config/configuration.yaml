@@ -167,3 +167,12 @@ ios:
 #        icon: google-controller
 #        color: "#000000"
 
+# Eufy Robovac
+
+eufy_vacuum:
+  devices:
+  - name: Robovac
+    address: 192.168.0.122
+    access_token: 2lRDw1wuRbuvjfbMKgyrNQ
+    id: 500700082cf432328ee3
+    type: T2118 # T2130

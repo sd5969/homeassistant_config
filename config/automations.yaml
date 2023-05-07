@@ -18,8 +18,10 @@
     - media_player.actually_speakers
     - media_player.all_speakers
     - media_player.bedroom_speaker
+    - media_player.bathroom_speaker
     - media_player.bedroom_tv
     - media_player.kitchen_speaker
+    - media_player.living_room_speaker
     - media_player.living_room_tv
   mode: single
 - id: '1610995780479'
@@ -110,4 +112,98 @@
     target:
       entity_id: scene.full_off
     metadata: {}
+  mode: single
+- id: '1681882371302'
+  alias: Leaving Home - Vacuum
+  description: ''
+  trigger:
+  - platform: zone
+    entity_id: person.sanjit
+    zone: zone.home
+    event: leave
+  condition:
+  - condition: numeric_state
+    entity_id: vacuum.robovac
+    attribute: battery_level
+    above: 75
+  - condition: state
+    entity_id: vacuum.robovac
+    state: 'off'
+    for:
+      hours: 22
+      minutes: 0
+      seconds: 0
+  - condition: state
+    entity_id: input_boolean.auto_vacuum
+    state: 'on'
+  action:
+  - service: vacuum.send_command
+    data:
+      command: autoClean
+    target:
+      entity_id: vacuum.robovac
+  mode: single
+- id: '1681882632828'
+  alias: Arriving Home - Vacuum
+  description: ''
+  trigger:
+  - platform: zone
+    entity_id: person.sanjit
+    zone: zone.home
+    event: enter
+  condition:
+  - condition: not
+    conditions:
+    - condition: or
+      conditions:
+      - condition: state
+        entity_id: vacuum.robovac
+        attribute: status
+        state: docked
+        for:
+          hours: 0
+          minutes: 0
+          seconds: 0
+      - condition: state
+        entity_id: vacuum.robovac
+        attribute: status
+        state: charging
+  action:
+  - service: vacuum.return_to_base
+    data: {}
+    target:
+      entity_id: vacuum.robovac
+  mode: single
+- id: '1682490301965'
+  alias: Daily Vacuum
+  description: ''
+  trigger:
+  - platform: time
+    at: '10:00:00'
+  condition:
+  - condition: not
+    conditions:
+    - condition: zone
+      entity_id: person.sanjit
+      zone: zone.home
+  - condition: numeric_state
+    entity_id: vacuum.robovac
+    attribute: battery_level
+    above: 75
+  - condition: state
+    entity_id: vacuum.robovac
+    state: 'off'
+    for:
+      hours: 22
+      minutes: 0
+      seconds: 0
+  - condition: state
+    entity_id: input_boolean.auto_vacuum
+    state: 'on'
+  action:
+  - service: vacuum.send_command
+    data:
+      command: autoClean
+    target:
+      entity_id: vacuum.robovac
   mode: single

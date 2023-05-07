@@ -16,6 +16,7 @@ class Scraper:
         hass,
         file_manager,
         parser,
+        separator,
     ):
         """Initialize the data object."""
         _LOGGER.debug("%s # Initializing scraper", config_name)
@@ -26,6 +27,7 @@ class Scraper:
         self._parser = parser
         self._soup = None
         self._data = None
+        self._separator = separator
         self.reset()
 
     @property
@@ -43,7 +45,12 @@ class Scraper:
     async def set_content(self, content):
         self._data = content
 
-        if content[0] not in ["{", "["]:
+        if content[0] in ["{", "["]:
+            _LOGGER.debug(
+                "%s # Response seems to be json. Skip parsing with BeautifulSoup.",
+                self._config_name,
+            )
+        else:
             try:
                 _LOGGER.debug(
                     "%s # Loading the content in BeautifulSoup.",
@@ -75,6 +82,11 @@ class Scraper:
                 self._data, None
             )
 
+        if self._data[0] in ["{", "["]:
+            raise ValueError(
+                "JSON cannot be scraped. Please provide a value template to parse JSON response."
+            )
+
         if selector.is_list:
             tags = self._soup.select(selector.list)
             _LOGGER.debug("%s # List selector selected tags: %s", log_prefix, tags)
@@ -87,7 +99,7 @@ class Scraper:
                 values = [tag[selector.attribute] for tag in tags]
             else:
                 values = [tag.text for tag in tags]
-            value = ",".join(values)
+            value = self._separator.join(values)
             _LOGGER.debug("%s # List selector csv: %s", log_prefix, value)
 
         else:

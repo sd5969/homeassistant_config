@@ -5,6 +5,7 @@ import os
 from datetime import timedelta
 
 import voluptuous as vol
+from custom_components.multiscrape.const import CONF_SEPARATOR
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_AUTHENTICATION
 from homeassistant.const import CONF_DESCRIPTION
@@ -24,13 +25,11 @@ from homeassistant.const import Platform
 from homeassistant.const import SERVICE_RELOAD
 from homeassistant.core import HomeAssistant
 from homeassistant.core import ServiceCall
-from homeassistant.exceptions import TemplateError
 from homeassistant.helpers import discovery
 from homeassistant.helpers.entity_component import EntityComponent
 from homeassistant.helpers.httpx_client import get_async_client
 from homeassistant.helpers.reload import async_reload_integration_platforms
 from homeassistant.helpers.service import async_set_service_schema
-from homeassistant.helpers.template import Template
 from homeassistant.util import slugify
 
 from .const import CONF_FIELDS
@@ -55,6 +54,8 @@ from .form import FormSubmitter
 from .http import HttpWrapper
 from .schema import CONFIG_SCHEMA  # noqa: F401
 from .scraper import Scraper
+from .util import create_dict_renderer
+from .util import create_renderer
 
 _LOGGER = logging.getLogger(__name__)
 # we don't want to go with the default 15 seconds defined in helpers/entity_component
@@ -231,7 +232,7 @@ def _create_scrape_http_wrapper(config_name, config, hass, file_manager):
         client,
         file_manager,
         timeout,
-        params=params,
+        params_renderer=create_dict_renderer(hass, params),
         request_headers=headers,
     )
     if username and password:
@@ -252,7 +253,7 @@ def _create_form_submit_http_wrapper(config_name, config, hass, file_manager):
         client,
         file_manager,
         timeout,
-        params=params,
+        params_renderer=create_dict_renderer(hass, params),
         request_headers=headers,
     )
     return http
@@ -293,7 +294,9 @@ def _create_multiscrape_coordinator(
     data_renderer = create_renderer(hass, conf.get(CONF_PAYLOAD))
 
     if resource_template is not None:
-        resource_template.hass = hass
+        resource_renderer = create_renderer(hass, resource_template)
+    else:
+        resource_renderer = create_renderer(hass, resource)
 
     return MultiscrapeDataUpdateCoordinator(
         config_name,
@@ -303,8 +306,7 @@ def _create_multiscrape_coordinator(
         form_submitter,
         scraper,
         scan_interval,
-        resource,
-        resource_template,
+        resource_renderer,
         method,
         data_renderer,
     )
@@ -313,30 +315,12 @@ def _create_multiscrape_coordinator(
 def _create_scraper(config_name, config, hass, file_manager):
     _LOGGER.debug("%s # Initializing scraper", config_name)
     parser = config.get(CONF_PARSER)
+    separator = config.get(CONF_SEPARATOR)
 
     return Scraper(
         config_name,
         hass,
         file_manager,
         parser,
+        separator,
     )
-
-
-def create_renderer(hass, value_template):
-    """Create a renderer based on variable_template value."""
-    if value_template is None:
-        return lambda value: value
-
-    if not isinstance(value_template, Template):
-        value_template = Template(value_template, hass)
-    else:
-        value_template.hass = hass
-
-    def _render(value):
-        try:
-            return value_template.async_render({"value": value}, parse_result=False)
-        except TemplateError:
-            _LOGGER.exception("Error parsing value of template")
-            return value
-
-    return _render
