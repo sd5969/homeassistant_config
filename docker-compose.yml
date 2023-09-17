@@ -1,0 +1,12 @@
+version: '3.3'
+services:
+    home-assistant:
+        ports:
+            - '8123:8123'
+        container_name: home-assistant
+        volumes:
+            - /home/sanjit/containers/home_assistant/config:/config
+            - /etc/localtime:/etc/localtime:ro
+        network_mode: host
+        restart: always
+        image: homeassistant/home-assistant

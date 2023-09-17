@@ -53,13 +53,16 @@
   trigger:
   - platform: sun
     event: sunset
-    offset: -00:30
+    offset: -0:45
   condition:
   - condition: zone
     entity_id: person.sanjit
     zone: zone.home
   action:
-  - scene: scene.full_on
+  - service: scene.turn_on
+    target:
+      entity_id: scene.full_on
+    metadata: {}
   mode: single
 - alias: Play/Pause
   description: ''
@@ -130,7 +133,7 @@
     entity_id: vacuum.robovac
     state: 'off'
     for:
-      hours: 22
+      hours: 4
       minutes: 0
       seconds: 0
   - condition: state
@@ -207,114 +210,285 @@
     target:
       entity_id: vacuum.robovac
   mode: single
-
 - alias: bedroom_off
   initial_state: true
   trigger:
-    - platform: event
-      event_type: ios.action_fired
-      event_data:
-        actionName: bedroom_off
+  - platform: event
+    event_type: ios.action_fired
+    event_data:
+      actionName: bedroom_off
   action:
-    - service: scene.turn_on
-      target:
-        entity_id: scene.bedroom_off
+  - service: scene.turn_on
+    target:
+      entity_id: scene.bedroom_off
+  id: 4fed1d1d19d245319e7e2e3499f407ff
 - alias: bedroom_on
   initial_state: true
   trigger:
-    - platform: event
-      event_type: ios.action_fired
-      event_data:
-        actionName: bedroom_on
+  - platform: event
+    event_type: ios.action_fired
+    event_data:
+      actionName: bedroom_on
   action:
-    - service: scene.turn_on
-      target:
-        entity_id: scene.bedroom_on
+  - service: scene.turn_on
+    target:
+      entity_id: scene.bedroom_on
+  id: 0aba6a05ae1d4673beb4fef6721b52c2
 - alias: full_off
   initial_state: true
   trigger:
-    - platform: event
-      event_type: ios.action_fired
-      event_data:
-        actionName: full_off
+  - platform: event
+    event_type: ios.action_fired
+    event_data:
+      actionName: full_off
   action:
-    - service: scene.turn_on
-      target:
-        entity_id: scene.full_off
+  - service: scene.turn_on
+    target:
+      entity_id: scene.full_off
+  id: e48f5e4544d648c7954017940478630a
 - alias: full_on
   initial_state: true
   trigger:
-    - platform: event
-      event_type: ios.action_fired
-      event_data:
-        actionName: full_on
+  - platform: event
+    event_type: ios.action_fired
+    event_data:
+      actionName: full_on
   action:
-    - service: scene.turn_on
-      target:
-        entity_id: scene.full_on
+  - service: scene.turn_on
+    target:
+      entity_id: scene.full_on
+  id: a1d545b48ab14dba8af3aabe3e6193d5
 - alias: living_room_off
   initial_state: true
   trigger:
-    - platform: event
-      event_type: ios.action_fired
-      event_data:
-        actionName: living_room_off
+  - platform: event
+    event_type: ios.action_fired
+    event_data:
+      actionName: living_room_off
   action:
-    - service: scene.turn_on
-      target:
-        entity_id: scene.living_room_off
+  - service: scene.turn_on
+    target:
+      entity_id: scene.living_room_off
+  id: 44d9a153626940388811919f0218c2bb
 - alias: living_room_on
   initial_state: true
   trigger:
-    - platform: event
-      event_type: ios.action_fired
-      event_data:
-        actionName: living_room_on
+  - platform: event
+    event_type: ios.action_fired
+    event_data:
+      actionName: living_room_on
   action:
-    - service: scene.turn_on
-      target:
-        entity_id: scene.living_room_on
+  - service: scene.turn_on
+    target:
+      entity_id: scene.living_room_on
+  id: 4e0aac1d64a5424b980a9ee757d82590
 - alias: dining
   initial_state: true
   trigger:
-    - platform: event
-      event_type: ios.action_fired
-      event_data:
-        actionName: dining
+  - platform: event
+    event_type: ios.action_fired
+    event_data:
+      actionName: dining
   action:
-    - service: scene.turn_on
-      target:
-        entity_id: scene.dining
+  - service: scene.turn_on
+    target:
+      entity_id: scene.dining
+  id: cf2b0499f1964c158fa7227db4aa6cb2
 - alias: relax
   initial_state: true
   trigger:
-    - platform: event
-      event_type: ios.action_fired
-      event_data:
-        actionName: relax
+  - platform: event
+    event_type: ios.action_fired
+    event_data:
+      actionName: relax
   action:
-    - service: scene.turn_on
-      target:
-        entity_id: scene.relax
+  - service: scene.turn_on
+    target:
+      entity_id: scene.relax
+  id: fe043c1310214a6b9977aa9e4800dcc5
 - alias: theater
   initial_state: true
   trigger:
-    - platform: event
-      event_type: ios.action_fired
-      event_data:
-        actionName: theater_mode
+  - platform: event
+    event_type: ios.action_fired
+    event_data:
+      actionName: theater_mode
   action:
-    - service: scene.turn_on
-      target:
-        entity_id: scene.theater_mode
+  - service: scene.turn_on
+    target:
+      entity_id: scene.theater_mode
+  id: 51b76f9f9b34474e9e2f9fbc711082da
 - alias: work
   initial_state: true
   trigger:
-    - platform: event
-      event_type: ios.action_fired
-      event_data:
-        actionName: work
+  - platform: event
+    event_type: ios.action_fired
+    event_data:
+      actionName: work
   action:
-    - service: scene.turn_on
+  - service: scene.turn_on
+    target:
+      entity_id: scene.work
+  id: 2f0d9c51e66e432f976bc3f652be2c63
+- id: '1694382443921'
+  alias: Sonos I - Living Room
+  description: ''
+  trigger: []
+  condition:
+  - condition: or
+    conditions:
+    - condition: state
+      entity_id: media_player.bathroom
+      state: playing
+    - condition: state
+      entity_id: media_player.bedroom
+      state: playing
+  action:
+  - if:
+    - condition: or
+      conditions:
+      - condition: state
+        entity_id: media_player.bathroom
+        state: playing
+      - condition: state
+        entity_id: media_player.bedroom
+        state: playing
+    then:
+    - if:
+      - condition: state
+        entity_id: media_player.bedroom
+        state: playing
+      then:
+      - service: media_player.join
+        data:
+          group_members:
+          - media_player.living_room
+        target:
+          entity_id: media_player.bedroom
+      else:
+      - service: media_player.join
+        data:
+          group_members:
+          - media_player.living_room
+        target:
+          entity_id: media_player.bathroom
+    - delay:
+        hours: 0
+        minutes: 0
+        seconds: 2
+        milliseconds: 0
+    - service: media_player.unjoin
+      data: {}
       target:
-        entity_id: scene.work
+        entity_id:
+        - media_player.bathroom
+        - media_player.bedroom
+  mode: single
+- id: '1694384173969'
+  alias: Sonos II - Bedroom
+  description: ''
+  trigger: []
+  condition:
+  - condition: or
+    conditions:
+    - condition: state
+      entity_id: media_player.bathroom
+      state: playing
+    - condition: state
+      entity_id: media_player.living_room
+      state: playing
+  action:
+  - if:
+    - condition: or
+      conditions:
+      - condition: state
+        entity_id: media_player.bathroom
+        state: playing
+      - condition: state
+        entity_id: media_player.living_room
+        state: playing
+    then:
+    - if:
+      - condition: state
+        entity_id: media_player.living_room
+        state: playing
+      then:
+      - service: media_player.join
+        data:
+          group_members:
+          - media_player.bedroom
+        target:
+          entity_id: media_player.living_room
+      else:
+      - service: media_player.join
+        data:
+          group_members:
+          - media_player.bedroom
+        target:
+          entity_id: media_player.bathroom
+    - delay:
+        hours: 0
+        minutes: 0
+        seconds: 2
+        milliseconds: 0
+    - service: media_player.unjoin
+      data: {}
+      target:
+        entity_id:
+        - media_player.bathroom
+        - media_player.living_room
+  mode: single
+- id: '1694384233538'
+  alias: Sonos III - Bathroom
+  description: ''
+  trigger: []
+  condition:
+  - condition: or
+    conditions:
+    - condition: state
+      entity_id: media_player.living_room
+      state: playing
+    - condition: state
+      entity_id: media_player.bedroom
+      state: playing
+  action:
+    if:
+    - condition: or
+      conditions:
+      - condition: state
+        entity_id: media_player.living_room
+        state: playing
+      - condition: state
+        entity_id: media_player.bedroom
+        state: playing
+    then:
+    - if:
+      - condition: state
+        entity_id: media_player.bedroom
+        state: playing
+      then:
+      - service: media_player.join
+        data:
+          group_members:
+          - media_player.bathroom
+        target:
+          entity_id: media_player.bedroom
+      else:
+      - service: media_player.join
+        data:
+          group_members:
+          - media_player.bathroom
+        target:
+          entity_id: media_player.living_room
+    - delay:
+        hours: 0
+        minutes: 0
+        seconds: 2
+        milliseconds: 0
+    - service: media_player.unjoin
+      data: {}
+      target:
+        entity_id:
+        - media_player.living_room
+        - media_player.bedroom
+  mode: single
