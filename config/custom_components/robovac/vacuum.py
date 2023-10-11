@@ -25,9 +25,17 @@ import time
 import ast
 
 from typing import Any
-from enum import IntEnum
+from enum import IntEnum, StrEnum
 from homeassistant.loader import bind_hass
-from homeassistant.components.vacuum import VacuumEntity, VacuumEntityFeature
+from homeassistant.components.vacuum import (
+    StateVacuumEntity,
+    VacuumEntityFeature,
+    STATE_CLEANING,
+    STATE_DOCKED,
+    STATE_ERROR,
+    STATE_IDLE,
+    STATE_RETURNING,
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import (
@@ -49,28 +57,13 @@ from homeassistant.const import (
 
 from .const import CONF_VACS, DOMAIN
 
-from .tuyalocalapi import TuyaDevice
+from .errors import getErrorMessage
+from .robovac import SUPPORTED_ROBOVAC_MODELS, RoboVac, RoboVacEntityFeature
 
 from homeassistant.const import ATTR_BATTERY_LEVEL
 
-
-class RoboVacEntityFeature(IntEnum):
-    """Supported features of the RoboVac entity."""
-
-    EDGE = 1
-    SMALL_ROOM = 2
-    CLEANING_TIME = 4
-    CLEANING_AREA = 8
-    DO_NOT_DISTURB = 16
-    AUTO_RETURN = 32
-    CONSUMABLES = 64
-    ROOM = 128
-    ZONE = 256
-    MAP = 512
-    BOOST_IQ = 1024
-
-
 ATTR_BATTERY_ICON = "battery_icon"
+ATTR_ERROR = "error"
 ATTR_FAN_SPEED = "fan_speed"
 ATTR_FAN_SPEED_LIST = "fan_speed_list"
 ATTR_STATUS = "status"
@@ -90,14 +83,19 @@ REFRESH_RATE = 20
 SCAN_INTERVAL = timedelta(seconds=REFRESH_RATE)
 
 
-class robovac(TuyaDevice):
-    """"""
-
-
-@bind_hass
-def is_on(hass: HomeAssistant, entity_id: str) -> bool:
-    """Return if the vacuum is on based on the statemachine."""
-    return hass.states.is_state(entity_id, STATE_ON)
+class TUYA_CODES(StrEnum):
+    BATTERY_LEVEL = "104"
+    STATE = "15"
+    ERROR_CODE = "106"
+    MODE = "5"
+    FAN_SPEED = "102"
+    CLEANING_AREA = "110"
+    CLEANING_TIME = "109"
+    AUTO_RETURN = "135"
+    DO_NOT_DISTURB = "107"
+    BOOST_IQ = "118"
+    G_CONSUMABLES = "142"
+    X_CONSUMABLES = "116"
 
 
 async def async_setup_entry(
@@ -106,16 +104,13 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Initialize my test integration 2 config entry."""
-    # print("vacuum:async_setup_entry")
     vacuums = config_entry.data[CONF_VACS]
-    # print("Vac:", vacuums)
     for item in vacuums:
         item = vacuums[item]
-        # print("item")
         async_add_entities([RoboVacEntity(item)])
 
 
-class RoboVacEntity(VacuumEntity):
+class RoboVacEntity(StateVacuumEntity):
     """Eufy Robovac version of a Vacuum entity"""
 
     _attr_should_poll = True
@@ -134,7 +129,7 @@ class RoboVacEntity(VacuumEntity):
 
     @property
     def robovac_supported(self) -> str | None:
-        """Return the cleaning mode of the vacuum cleaner."""
+        """Return the supported features of the vacuum cleaner."""
         return self._attr_robovac_supported
 
     @property
@@ -188,15 +183,26 @@ class RoboVacEntity(VacuumEntity):
         return self._attr_ip_address
 
     @property
-    def state_attributes(self) -> dict[str, Any]:
-        """Return the state attributes of the vacuum cleaner."""
-        data = super().state_attributes
-        # data: dict[str, Any] = {}
-        if self.supported_features & VacuumEntityFeature.BATTERY:
-            data[ATTR_BATTERY_LEVEL] = self.battery_level
-            data[ATTR_BATTERY_ICON] = self.battery_icon
-        if self.supported_features & VacuumEntityFeature.FAN_SPEED:
-            data[ATTR_FAN_SPEED] = self.fan_speed
+    def state(self) -> str | None:
+        if self.tuya_state is None or (
+            type(self.error_code) is not None and self.error_code not in [0, "no_error"]
+        ):
+            return STATE_ERROR
+        elif self.tuya_state == "Charging" or self.tuya_state == "completed":
+            return STATE_DOCKED
+        elif self.tuya_state == "Recharge":
+            return STATE_RETURNING
+        elif self.tuya_state == "Sleeping" or self.tuya_state == "standby":
+            return STATE_IDLE
+        else:
+            return STATE_CLEANING
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return the device-specific state attributes of this vacuum."""
+        data: dict[str, Any] = {}
+        data[ATTR_ERROR] = getErrorMessage(self.error_code)
+
         if self.supported_features & VacuumEntityFeature.STATUS:
             data[ATTR_STATUS] = self.status
         if self.robovac_supported & RoboVacEntityFeature.CLEANING_AREA:
@@ -214,76 +220,29 @@ class RoboVacEntity(VacuumEntity):
         data[ATTR_MODE] = self.mode
         return data
 
-    @property
-    def capability_attributes(self) -> Mapping[str, Any] | None:
-        """Return capability attributes."""
-        if self.supported_features & VacuumEntityFeature.FAN_SPEED:
-            return {
-                ATTR_FAN_SPEED_LIST: self.fan_speed_list,
-                # CONF_ACCESS_TOKEN: self.access_token,
-                CONF_IP_ADDRESS: self.ip_address,
-                ATTR_MODEL_CODE: self.model_code,
-            }
-        else:
-            return {
-                # CONF_ACCESS_TOKEN: self.access_token,
-                CONF_IP_ADDRESS: self.ip_address,
-                ATTR_MODEL_CODE: self.model_code,
-            }
-
     def __init__(self, item) -> None:
-        # print("vacuum:RoboVacEntity")
-        # print("init_item", item)
-        """Initialize mytest2 Sensor."""
+        """Initialize Eufy Robovac"""
         super().__init__()
-        self._extra_state_attributes = {}
         self._attr_battery_level = 0
-        self._attr_is_on = False
         self._attr_name = item[CONF_NAME]
         self._attr_unique_id = item[CONF_ID]
-        self._attr_supported_features = 4084
         self._attr_model_code = item[CONF_MODEL]
         self._attr_ip_address = item[CONF_IP_ADDRESS]
         self._attr_access_token = item[CONF_ACCESS_TOKEN]
-        self._attr_robovac_supported = 0
-        if self.model_code[0:5] in [
-            "T2103",
-            "T2117",
-            "T2118",
-            "T2119",
-            "T2120",
-            "T2123",
-            "T2128",
-            "T2130",
-        ]:  # C
-            self._attr_fan_speed_list = ["No Suction", "Standard", "Boost IQ", "Max"]
-            self._attr_robovac_supported = (
-                RoboVacEntityFeature.EDGE | RoboVacEntityFeature.SMALL_ROOM
-            )
-        elif self.model_code[0:5] in ["T1250", "T2250", "T2251", "T2252", "T2253"]:  # G
-            self._attr_fan_speed_list = ["Standard", "Turbo", "Max", "Boost IQ"]
-            self._attr_robovac_supported = (
-                RoboVacEntityFeature.CLEANING_TIME
-                | RoboVacEntityFeature.CLEANING_AREA
-                | RoboVacEntityFeature.DO_NOT_DISTURB
-                | RoboVacEntityFeature.AUTO_RETURN
-                | RoboVacEntityFeature.CONSUMABLES
-            )
-        elif self.model_code[0:5] in ["T2262"]:  # X
-            self._attr_fan_speed_list = ["Pure", "Standard", "Turbo", "Max"]
-            self._attr_robovac_supported = (
-                RoboVacEntityFeature.CLEANING_TIME
-                | RoboVacEntityFeature.CLEANING_AREA
-                | RoboVacEntityFeature.DO_NOT_DISTURB
-                | RoboVacEntityFeature.AUTO_RETURN
-                | RoboVacEntityFeature.CONSUMABLES
-                | RoboVacEntityFeature.ROOM
-                | RoboVacEntityFeature.ZONE
-                | RoboVacEntityFeature.MAP
-                | RoboVacEntityFeature.BOOST_IQ
-            )
-        else:
-            self._attr_fan_speed_list = ["Standard"]
+
+        self.vacuum = RoboVac(
+            device_id=self.unique_id,
+            host=self.ip_address,
+            local_key=self.access_token,
+            timeout=2,
+            ping_interval=10,
+            model_code=self.model_code[0:5],
+        )
+
+        self._attr_supported_features = self.vacuum.getHomeAssistantFeatures()
+        self._attr_robovac_supported = self.vacuum.getRoboVacFeatures()
+        self._attr_fan_speed_list = self.vacuum.getFanSpeeds()
+
         self._attr_mode = None
         self._attr_consumables = None
         self._attr_device_info = DeviceInfo(
@@ -294,37 +253,26 @@ class RoboVacEntity(VacuumEntity):
             connections=[
                 (CONNECTION_NETWORK_MAC, item[CONF_MAC]),
             ],
-            access_token=item[CONF_ACCESS_TOKEN],
-            ip_address=item[CONF_IP_ADDRESS],
         )
-        self.vacuum = robovac(
-            device_id=self.unique_id,
-            host=self.ip_address,
-            local_key=self.access_token,
-            timeout=2,
-            ping_interval=10
-            # ping_interval=REFRESH_RATE / 2,
-        )
+
         self.error_code = None
         self.tuya_state = None
         self.tuyastatus = None
-        print("vac:", self.vacuum)
 
     async def async_update(self):
         """Synchronise state from the vacuum."""
-        print("update:", self.name)
         self.async_write_ha_state()
         if self.ip_address == "":
             return
         await self.vacuum.async_get()
         self.tuyastatus = self.vacuum._dps
-        print("Tuya local API Result:", self.tuyastatus)
+
         # for 15C
-        self._attr_battery_level = self.tuyastatus.get("104")
-        self.tuya_state = self.tuyastatus.get("15")
-        self.error_code = self.tuyastatus.get("106")
-        self._attr_mode = self.tuyastatus.get("5")
-        self._attr_fan_speed = self.tuyastatus.get("102")
+        self._attr_battery_level = self.tuyastatus.get(TUYA_CODES.BATTERY_LEVEL)
+        self.tuya_state = self.tuyastatus.get(TUYA_CODES.STATE)
+        self.error_code = self.tuyastatus.get(TUYA_CODES.ERROR_CODE)
+        self._attr_mode = self.tuyastatus.get(TUYA_CODES.MODE)
+        self._attr_fan_speed = self.tuyastatus.get(TUYA_CODES.FAN_SPEED)
         if self.fan_speed == "No_suction":
             self._attr_fan_speed = "No Suction"
         elif self.fan_speed == "Boost_IQ":
@@ -332,127 +280,29 @@ class RoboVacEntity(VacuumEntity):
         elif self.fan_speed == "Quiet":
             self._attr_fan_speed = "Pure"
         # for G30
-        self._attr_cleaning_area = self.tuyastatus.get("110")
-        self._attr_cleaning_time = self.tuyastatus.get("109")
-        self._attr_auto_return = self.tuyastatus.get("135")
-        self._attr_do_not_disturb = self.tuyastatus.get("107")
-        if self.tuyastatus.get("142") is not None:
+        self._attr_cleaning_area = self.tuyastatus.get(TUYA_CODES.CLEANING_AREA)
+        self._attr_cleaning_time = self.tuyastatus.get(TUYA_CODES.CLEANING_TIME)
+        self._attr_auto_return = self.tuyastatus.get(TUYA_CODES.AUTO_RETURN)
+        self._attr_do_not_disturb = self.tuyastatus.get(TUYA_CODES.DO_NOT_DISTURB)
+        if self.tuyastatus.get(TUYA_CODES.G_CONSUMABLES) is not None:
             self._attr_consumables = ast.literal_eval(
-                base64.b64decode(self.tuyastatus.get("142")).decode("ascii")
+                base64.b64decode(self.tuyastatus.get(TUYA_CODES.G_CONSUMABLES)).decode(
+                    "ascii"
+                )
             )["consumable"]["duration"]
-            print(self.consumables)
         # For X8
-        self._attr_boost_iq = self.tuyastatus.get("118")
+        self._attr_boost_iq = self.tuyastatus.get(TUYA_CODES.BOOST_IQ)
         # self.map_data = self.tuyastatus.get("121")
         # self.erro_msg? = self.tuyastatus.get("124")
-        if self.tuyastatus.get("116") is not None:
+        if self.tuyastatus.get(TUYA_CODES.X_CONSUMABLES) is not None:
             self._attr_consumables = ast.literal_eval(
-                base64.b64decode(self.tuyastatus.get("116")).decode("ascii")
+                base64.b64decode(self.tuyastatus.get(TUYA_CODES.X_CONSUMABLES)).decode(
+                    "ascii"
+                )
             )["consumable"]["duration"]
-            print(self.consumables)
-
-    @property
-    def status(self):
-        """Return the status of the vacuum cleaner."""
-        print("status:", self.error_code, self.tuya_state)
-        if self.ip_address == "":
-            return "Error: Set the IP Address"
-        if type(self.error_code) is not None and self.error_code not in [0, "no_error"]:
-            self._attr_is_on = False
-            if self.error_code == 1:
-                return "Error: Front bumper stuck"
-            elif self.error_code == 2:
-                return "Error: Wheel stuck"
-            elif self.error_code == 3:
-                return "Error: Side brush"
-            elif self.error_code == 4:
-                return "Error: Rolling brush bar stuck"
-            elif self.error_code == 5:
-                return "Error: Device trapped"
-            elif self.error_code == 6:
-                return "Error: Device trapped"
-            elif self.error_code == 7:
-                return "Error: Wheel suspended"
-            elif self.error_code == 8:
-                return "Error: Low battery"
-            elif self.error_code == 9:
-                return "Error: Magnetic boundary"
-            elif self.error_code == 12:
-                return "Error: Right wall sensor"
-            elif self.error_code == 13:
-                return "Error: Device tilted"
-            elif self.error_code == 14:
-                return "Error: Insert dust collector"
-            elif self.error_code == 17:
-                return "Error: Restricted area detected"
-            elif self.error_code == 18:
-                return "Error: Laser cover stuck"
-            elif self.error_code == 19:
-                return "Error: Laser sesor stuck"
-            elif self.error_code == 20:
-                return "Error: Laser sensor blocked"
-            elif self.error_code == 21:
-                return "Error: Base blocked"
-            elif self.error_code == "S1":
-                return "Error: Battery"
-            elif self.error_code == "S2":
-                return "Error: Wheel Module"
-            elif self.error_code == "S3":
-                return "Error: Side Brush"
-            elif self.error_code == "S4":
-                return "Error: Suction Fan"
-            elif self.error_code == "S5":
-                return "Error: Rolling Brush"
-            elif self.error_code == "S8":
-                return "Error: Path Tracking Sensor"
-            elif self.error_code == "Wheel_stuck":
-                return "Error: Wheel stuck"
-            elif self.error_code == "R_brush_stuck":
-                return "Error: Rolling brush stuck"
-            elif self.error_code == "Crash_bar_stuck":
-                return "Error: Front bumper stuck"
-            elif self.error_code == "sensor_dirty":
-                return "Error: Sensor dirty"
-            elif self.error_code == "N_enough_pow":
-                return "Error: Low battery"
-            elif self.error_code == "Stuck_5_min":
-                return "Error: Device trapped"
-            elif self.error_code == "Fan_stuck":
-                return "Error: Fan stuck"
-            elif self.error_code == "S_brush_stuck":
-                return "Error: Side brush stuck"
-            else:
-                return "Error: " + str(self.error_code)
-        elif self.tuya_state == "Running":
-            self._attr_is_on = True
-            return "cleaning"
-        elif self.tuya_state == "Locating":
-            self._attr_is_on = True
-            return "cleaning"
-        elif self.tuya_state == "remote":
-            self._attr_is_on = True
-            return "cleaning"
-        elif self.tuya_state == "Charging":
-            self._attr_is_on = False
-            return "charging"
-        elif self.tuya_state == "completed":
-            self._attr_is_on = False
-            return "docked"
-        elif self.tuya_state == "Recharge":
-            self._attr_is_on = True
-            return "returning"
-        elif self.tuya_state == "Sleeping":
-            self._attr_is_on = False
-            return "paused"
-        elif self.tuya_state == "standby":
-            self._attr_is_on = False
-            return "paused"
-        else:
-            return "cleaning"
 
     async def async_locate(self, **kwargs):
         """Locate the vacuum cleaner."""
-        print("Locate Pressed")
         _LOGGER.info("Locate Pressed")
         if self.tuyastatus.get("103"):
             await self.vacuum.async_set({"103": False}, None)
@@ -461,32 +311,32 @@ class RoboVacEntity(VacuumEntity):
 
     async def async_return_to_base(self, **kwargs):
         """Set the vacuum cleaner to return to the dock."""
-        print("Return home Pressed")
         _LOGGER.info("Return home Pressed")
         await self.vacuum.async_set({"101": True}, None)
         await asyncio.sleep(1)
         self.async_update
 
-    async def async_start_pause(self, **kwargs):
-        """Pause the cleaning task or resume it."""
-        print("Start/Pause Pressed")
-        _LOGGER.info("Start/Pause Pressed")
-        if self.tuya_state in ["Recharge", "Running", "Locating", "remote"]:
-            await self.vacuum.async_set({"2": False}, None)
-        else:
-            if self.mode == "Nosweep":
-                self._attr_mode = "auto"
-            elif self.mode == "room" and (
-                self.status == "Charging" or self.status == "completed"
-            ):
-                self._attr_mode = "auto"
-            await self.vacuum.async_set({"5": self.mode}, None)
+    async def async_start(self, **kwargs):
+        if self.mode == "Nosweep":
+            self._attr_mode = "auto"
+        elif self.mode == "room" and (
+            self.status == "Charging" or self.status == "completed"
+        ):
+            self._attr_mode = "auto"
+        await self.vacuum.async_set({"5": self.mode}, None)
         await asyncio.sleep(1)
         self.async_update
 
+    async def async_pause(self, **kwargs):
+        await self.vacuum.async_set({"2": False}, None)
+        await asyncio.sleep(1)
+        self.async_update
+
+    async def async_stop(self, **kwargs):
+        await self.async_return_to_base()
+
     async def async_clean_spot(self, **kwargs):
         """Perform a spot clean-up."""
-        print("Spot Clean Pressed")
         _LOGGER.info("Spot Clean Pressed")
         await self.vacuum.async_set({"5": "Spot"}, None)
         await asyncio.sleep(1)
@@ -494,7 +344,6 @@ class RoboVacEntity(VacuumEntity):
 
     async def async_set_fan_speed(self, fan_speed, **kwargs):
         """Set fan speed."""
-        print("Fan Speed Selected", fan_speed)
         _LOGGER.info("Fan Speed Selected")
         if fan_speed == "No Suction":
             fan_speed = "No_suction"

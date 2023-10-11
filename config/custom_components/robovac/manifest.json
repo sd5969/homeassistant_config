@@ -1,14 +1,13 @@
 {
-  "domain": "robovac",
-  "name": "Eufy Robovac",
-  "config_flow": true,
-  "documentation": "https://www.home-assistant.io/integrations/robovac",
-  "requirements": [],
-  "ssdp": [],
-  "zeroconf": [],
-  "homekit": {},
-  "dependencies": [],
-  "codeowners": ["@bmccluskey"],
-  "iot_class": "local_polling",
-  "version": "1"
+    "domain": "robovac",
+    "name": "Eufy Robovac",
+    "codeowners": ["@codefoodpixels"],
+    "config_flow": true,
+    "dependencies": [],
+    "documentation": "https://github.com/codefoodpixels/robovac",
+    "integration_type": "device",
+    "iot_class": "local_polling",
+    "issue_tracker": "https://github.com/codefoodpixels/robovac/issues",
+    "requirements": [],
+    "version": "1.0.0"
 }
