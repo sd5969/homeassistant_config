@@ -41,9 +41,11 @@ from homeassistant.const import (
     CONF_MAC,
     CONF_LOCATION,
     CONF_CLIENT_ID,
+    CONF_REGION,
+    CONF_TIME_ZONE,
 )
 
-from .const import DOMAIN, CONF_VACS, CONF_PHONE_CODE
+from .const import CONF_AUTODISCOVERY, DOMAIN, CONF_VACS
 
 from .tuyawebapi import TuyaAPISession
 from .eufywebapi import EufyLogon
@@ -77,32 +79,51 @@ def get_eufy_vacuums(self):
     )
 
     device_response = response.json()
-    self[CONF_CLIENT_ID] = user_response["user_info"]["id"]
-    self[CONF_PHONE_CODE] = user_response["user_info"]["phone_code"]
 
-    # self[CONF_VACS] = {}
-    items = device_response["items"]
-    allvacs = {}
-    for item in items:
-        if item["device"]["product"]["appliance"] == "Cleaning":
-            vac_details = {
-                CONF_ID: item["device"]["id"],
-                CONF_MODEL: item["device"]["product"]["product_code"],
-                CONF_NAME: item["device"]["alias_name"],
-                CONF_DESCRIPTION: item["device"]["name"],
-                CONF_MAC: item["device"]["wifi"]["mac"],
-                CONF_IP_ADDRESS: "",
-            }
-            allvacs[item["device"]["id"]] = vac_details
-    self[CONF_VACS] = allvacs
+    response = eufy_session.get_user_settings(
+        user_response["user_info"]["request_host"],
+        user_response["user_info"]["id"],
+        user_response["access_token"],
+    )
+    settings_response = response.json()
+
+    self[CONF_CLIENT_ID] = user_response["user_info"]["id"]
+    self[CONF_REGION] = settings_response["setting"]["home_setting"]["tuya_home"][
+        "tuya_region_code"
+    ]
+    self[CONF_TIME_ZONE] = user_response["user_info"]["timezone"]
 
     tuya_client = TuyaAPISession(
-        username="eh-" + self[CONF_CLIENT_ID], country_code=self[CONF_PHONE_CODE]
+        username="eh-" + self[CONF_CLIENT_ID],
+        region=self[CONF_REGION],
+        timezone=self[CONF_TIME_ZONE],
     )
-    for home in tuya_client.list_homes():
-        for device in tuya_client.list_devices(home["groupId"]):
-            self[CONF_VACS][device["devId"]][CONF_ACCESS_TOKEN] = device["localKey"]
-            self[CONF_VACS][device["devId"]][CONF_LOCATION] = home["groupId"]
+
+    items = device_response["items"]
+    self[CONF_VACS] = {}
+    for item in items:
+        if item["device"]["product"]["appliance"] == "Cleaning":
+            try:
+                device = tuya_client.get_device(item["device"]["id"])
+                _LOGGER.debug("Robovac schema: {}".format(device["schema"]))
+
+                vac_details = {
+                    CONF_ID: item["device"]["id"],
+                    CONF_MODEL: item["device"]["product"]["product_code"],
+                    CONF_NAME: item["device"]["alias_name"],
+                    CONF_DESCRIPTION: item["device"]["name"],
+                    CONF_MAC: item["device"]["wifi"]["mac"],
+                    CONF_IP_ADDRESS: "",
+                    CONF_AUTODISCOVERY: True,
+                    CONF_ACCESS_TOKEN: device["localKey"],
+                }
+                self[CONF_VACS][item["device"]["id"]] = vac_details
+            except:
+                _LOGGER.debug(
+                    "Vacuum {} found on Eufy, but not on Tuya. Skipping.".format(
+                        item["device"]["id"]
+                    )
+                )
 
     return response
 
@@ -164,46 +185,64 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
     def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
         self.config_entry = config_entry
+        self.selected_vacuum = None
 
-    async def async_step_init(
-        self, user_input: dict[str, Any] = None
-    ) -> dict[str, Any]:
-        """Manage the options for the custom component."""
-        errors: dict[str, str] = {}
+    async def async_step_init(self, user_input=None):
+        errors = {}
 
-        vac_names = []
-        vacuums = self.config_entry.data[CONF_VACS]
-        for item in vacuums:
-            item_settings = vacuums[item]
-            vac_names.append(item_settings["name"])
         if user_input is not None:
-            for item in vacuums:
-                item_settings = vacuums[item]
-                if item_settings["name"] == user_input["vacuum"]:
-                    item_settings[CONF_IP_ADDRESS] = user_input[CONF_IP_ADDRESS]
-            updated_repos = deepcopy(self.config_entry.data[CONF_VACS])
+            self.selected_vacuum = user_input["selected_vacuum"]
+            return await self.async_step_edit()
 
-            if not errors:
-                # Value of data will be set on the options property of our config_entry
-                # instance.
-                return self.async_create_entry(
-                    title="",
-                    data={CONF_VACS: updated_repos},
-                )
+        vacuums_config = self.config_entry.data[CONF_VACS]
+        vacuum_list = {}
+        for vacuum_id in vacuums_config:
+            vacuum_list[vacuum_id] = vacuums_config[vacuum_id]["name"]
+
+        devices_schema = vol.Schema(
+            {vol.Required("selected_vacuum"): vol.In(vacuum_list)}
+        )
+
+        return self.async_show_form(
+            step_id="init", data_schema=devices_schema, errors=errors
+        )
+
+    async def async_step_edit(self, user_input=None):
+        """Manage the options for the custom component."""
+        errors = {}
+
+        vacuums = self.config_entry.data[CONF_VACS]
+
+        if user_input is not None:
+            updated_vacuums = deepcopy(vacuums)
+            updated_vacuums[self.selected_vacuum][CONF_AUTODISCOVERY] = user_input[
+                CONF_AUTODISCOVERY
+            ]
+            if user_input[CONF_IP_ADDRESS]:
+                updated_vacuums[self.selected_vacuum][CONF_IP_ADDRESS] = user_input[
+                    CONF_IP_ADDRESS
+                ]
+
+            self.hass.config_entries.async_update_entry(
+                self.config_entry,
+                data={CONF_VACS: updated_vacuums},
+            )
+
+            return self.async_create_entry(title="", data={})
 
         options_schema = vol.Schema(
             {
-                vol.Optional("vacuum", default=1): selector(
-                    {
-                        "select": {
-                            "options": vac_names,
-                        }
-                    }
-                ),
-                vol.Optional(CONF_IP_ADDRESS): cv.string,
+                vol.Required(
+                    CONF_AUTODISCOVERY,
+                    default=vacuums[self.selected_vacuum].get(CONF_AUTODISCOVERY, True),
+                ): bool,
+                vol.Optional(
+                    CONF_IP_ADDRESS,
+                    default=vacuums[self.selected_vacuum].get(CONF_IP_ADDRESS),
+                ): str,
             }
         )
 
         return self.async_show_form(
-            step_id="init", data_schema=options_schema, errors=errors
+            step_id="edit", data_schema=options_schema, errors=errors
         )

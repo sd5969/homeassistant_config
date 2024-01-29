@@ -19,8 +19,6 @@ class RoboVacEntityFeature(IntEnum):
     BOOST_IQ = 1024
 
 
-HAS_MAP_FEATURE = ["T2253","T2261", "T2262"]
-
 ROBOVAC_SERIES = {
     "C": [
         "T2103",
@@ -31,6 +29,7 @@ ROBOVAC_SERIES = {
         "T2123",
         "T2128",
         "T2130",
+        "T2132",
     ],
     "G": [
         "T1250",
@@ -40,38 +39,69 @@ ROBOVAC_SERIES = {
         "T2253",
         "T2150",
         "T2255",
+        "T2256",
+        "T2257",
+        "T2258",
+        "T2259",
+        "T2270",
+        "T2272",
+        "T2273",
     ],
-    "X": ["T2261", "T2262"],
+    "L": ["T2181", "T2182", "T2190", "T2192", "T2193", "T2194"],
+    "X": ["T2261", "T2262", "T2320"],
 }
+
+HAS_MAP_FEATURE = ["T2253", *ROBOVAC_SERIES["L"], *ROBOVAC_SERIES["X"]]
+
+HAS_CONSUMABLES = [
+    "T1250",
+    "T2181",
+    "T2182",
+    "T2190",
+    "T2193",
+    "T2194",
+    "T2253",
+    "T2256",
+    "T2258",
+    "T2261",
+    "T2273",
+    "T2320",
+]
 
 ROBOVAC_SERIES_FEATURES = {
     "C": RoboVacEntityFeature.EDGE | RoboVacEntityFeature.SMALL_ROOM,
     "G": RoboVacEntityFeature.CLEANING_TIME
     | RoboVacEntityFeature.CLEANING_AREA
     | RoboVacEntityFeature.DO_NOT_DISTURB
+    | RoboVacEntityFeature.AUTO_RETURN,
+    "L": RoboVacEntityFeature.CLEANING_TIME
+    | RoboVacEntityFeature.CLEANING_AREA
+    | RoboVacEntityFeature.DO_NOT_DISTURB
     | RoboVacEntityFeature.AUTO_RETURN
-    | RoboVacEntityFeature.CONSUMABLES,
+    | RoboVacEntityFeature.ROOM
+    | RoboVacEntityFeature.ZONE
+    | RoboVacEntityFeature.BOOST_IQ,
     "X": RoboVacEntityFeature.CLEANING_TIME
     | RoboVacEntityFeature.CLEANING_AREA
     | RoboVacEntityFeature.DO_NOT_DISTURB
     | RoboVacEntityFeature.AUTO_RETURN
-    | RoboVacEntityFeature.CONSUMABLES
     | RoboVacEntityFeature.ROOM
     | RoboVacEntityFeature.ZONE
-    | RoboVacEntityFeature.MAP
     | RoboVacEntityFeature.BOOST_IQ,
 }
 
 ROBOVAC_SERIES_FAN_SPEEDS = {
-"C": ["No Suction", "Standard", "Boost IQ", "Max"],
-"G": ["Standard", "Turbo", "Max", "Boost IQ"],
-"X": ["Pure", "Standard", "Turbo", "Max"],
+    "C": ["No Suction", "Standard", "Boost IQ", "Max"],
+    "G": ["Standard", "Turbo", "Max", "Boost IQ"],
+    "L": ["Quiet", "Standard", "Turbo", "Max"],
+    "X": ["Pure", "Standard", "Turbo", "Max"],
 }
 
 
 SUPPORTED_ROBOVAC_MODELS = list(
     set([item for sublist in ROBOVAC_SERIES.values() for item in sublist])
 )
+
 
 class ModelNotSupportedException(Exception):
     """This model is not supported"""
@@ -109,13 +139,20 @@ class RoboVac(TuyaDevice):
         return supportedFeatures
 
     def getRoboVacFeatures(self):
-        return ROBOVAC_SERIES_FEATURES[self.getRoboVacSeries()]
+        supportedFeatures = ROBOVAC_SERIES_FEATURES[self.getRoboVacSeries()]
+
+        if self.model_code in HAS_MAP_FEATURE:
+            supportedFeatures |= RoboVacEntityFeature.MAP
+
+        if self.model_code in HAS_CONSUMABLES:
+            supportedFeatures |= RoboVacEntityFeature.CONSUMABLES
+
+        return supportedFeatures
 
     def getRoboVacSeries(self):
         for series, models in ROBOVAC_SERIES.items():
             if self.model_code in models:
                 return series
-
 
     def getFanSpeeds(self):
         return ROBOVAC_SERIES_FAN_SPEEDS[self.getRoboVacSeries()]

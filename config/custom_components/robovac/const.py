@@ -2,4 +2,5 @@
 
 DOMAIN = "robovac"
 CONF_VACS = "vacuums"
-CONF_PHONE_CODE = "phone_code"
+CONF_AUTODISCOVERY = "autodiscovery"
+REFRESH_RATE = 20

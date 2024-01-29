@@ -347,6 +347,10 @@ class RequestResponseCommandMismatch(TuyaException):
     """The command in the response didn't match the one from the request."""
 
 
+class ResponseTimeoutException(TuyaException):
+    """Did not recieve a response to the request within the timeout"""
+
+
 class TuyaCipher:
     """Tuya cryptographic helpers."""
 
@@ -435,7 +439,6 @@ def crc(data):
 
 
 class Message:
-
     PING_COMMAND = 0x09
     GET_COMMAND = 0x0A
     SET_COMMAND = 0x07
@@ -446,11 +449,11 @@ class Message:
             payload = b""
         self.payload = payload
         self.command = command
+        self.original_sequence = sequence
         if sequence is None:
-            # Use millisecond process time as the sequence number. Not ideal,
-            # but good for one month's continuous connection time though.
-            sequence = int(time.perf_counter() * 1000) & 0xFFFFFFFF
-        self.sequence = sequence
+            self.set_sequence()
+        else:
+            self.sequence = sequence
         self.encrypt = False
         self.device = None
         if encrypt_for is not None:
@@ -465,6 +468,9 @@ class Message:
             self.sequence,
             "<Device {}>".format(self.device) if self.device else None,
         )
+
+    def set_sequence(self):
+        self.sequence = int(time.perf_counter() * 1000) & 0xFFFFFFFF
 
     def hex(self):
         return self.bytes().hex()
@@ -497,36 +503,34 @@ class Message:
 
     __bytes__ = bytes
 
-    class AsyncWrappedCallback:
-        def __init__(self, request, callback):
-            self.request = request
-            self.callback = callback
-            self.devices = []
-
-        def register(self, device):
-            self.devices.append(device)
-            device._handlers.setdefault(self.request.command, [])
-            device._handlers[self.request.command].append(self)
-
-        def unregister(self, device):
-            self.devices.remove(device)
-            device._handlers[self.request.command].remove(self)
-
-        def unregister_all(self):
-            while self.devices:
-                device = self.devices.pop()
-                device._handlers[self.request.command].remove(self)
-
-        async def __call__(self, response, device):
-            if response.sequence == self.request.sequence:
-                asyncio.ensure_future(self.callback(response, device))
-                self.unregister(device)
-
-    async def async_send(self, device, callback=None):
-        if callback is not None:
-            wrapped = self.AsyncWrappedCallback(self, callback)
-            wrapped.register(device)
+    async def async_send(self, device, retries=4):
+        device._listeners[self.sequence] = asyncio.Semaphore(0)
         await device._async_send(self)
+        try:
+            await asyncio.wait_for(
+                device._listeners[self.sequence].acquire(), timeout=device.timeout
+            )
+        except:
+            del device._listeners[self.sequence]
+            if retries == 0:
+                raise ResponseTimeoutException(
+                    "Timed out waiting for response to sequence number {}".format(
+                        self.sequence
+                    )
+                )
+
+            _LOGGER.debug(
+                "Timed out waiting for response to sequence number {}. Retrying".format(
+                    self.sequence
+                )
+            )
+
+            if self.original_sequence is None:
+                self.set_sequence()
+
+            return self.async_send(device, retries - 1)
+
+        return device._listeners.pop(self.sequence)
 
     @classmethod
     def from_bytes(cls, data, cipher=None):
@@ -627,6 +631,7 @@ class TuyaDevice:
         host,
         timeout,
         ping_interval,
+        update_entity_state,
         local_key=None,
         port=6668,
         gateway_id=None,
@@ -643,6 +648,7 @@ class TuyaDevice:
         self.timeout = timeout
         self.last_pong = 0
         self.ping_interval = ping_interval
+        self.update_entity_state_cb = update_entity_state
 
         if len(local_key) != 16:
             raise InvalidKey("Local key should be a 16-character string")
@@ -650,12 +656,12 @@ class TuyaDevice:
         self.cipher = TuyaCipher(local_key, self.version)
         self.writer = None
         self._handlers = {
-            Message.GET_COMMAND: [self.async_update_state],
-            Message.GRATUITOUS_UPDATE: [self.async_update_state],
+            Message.GRATUITOUS_UPDATE: [self.async_gratuitous_update_state],
             Message.PING_COMMAND: [self._async_pong_received],
         }
         self._dps = {}
         self._connected = False
+        self._listeners = {}
 
     def __repr__(self):
         return "{}({!r}, {!r}, {!r}, {!r})".format(
@@ -678,12 +684,12 @@ class TuyaDevice:
         try:
             sock.connect((self.host, self.port))
         except socket.timeout as e:
+            self._dps["106"] = "CONNECTION_FAILED"
             raise ConnectionTimeoutException("Connection timed out") from e
         self.reader, self.writer = await asyncio.open_connection(sock=sock)
         self._connected = True
-        asyncio.ensure_future(self._async_handle_message())
         asyncio.ensure_future(self._async_ping(self.ping_interval))
-        asyncio.ensure_future(self.async_get(callback))
+        asyncio.ensure_future(self._async_handle_message())
 
     async def async_disconnect(self):
         _LOGGER.debug("Disconnected from {}".format(self))
@@ -692,22 +698,26 @@ class TuyaDevice:
         if self.writer is not None:
             self.writer.close()
 
-    async def async_get(self, callback=None):
+    async def async_get(self):
         payload = {"gwId": self.gateway_id, "devId": self.device_id}
         maybe_self = None if self.version < (3, 3) else self
         message = Message(Message.GET_COMMAND, payload, encrypt_for=maybe_self)
-        return await message.async_send(self, callback)
+        response = await message.async_send(self)
+        await self.async_update_state(response)
 
-    async def async_set(self, dps, callback=None):
+    async def async_set(self, dps):
         t = int(time.time())
         payload = {"devId": self.device_id, "uid": "", "t": t, "dps": dps}
         message = Message(Message.SET_COMMAND, payload, encrypt_for=self)
-        await message.async_send(self, callback)
+        await message.async_send(self)
 
     def set(self, dps):
         _call_async(self.async_set, dps)
 
     async def _async_ping(self, ping_interval):
+        if not self._connected:
+            return
+
         self.last_ping = time.time()
         maybe_self = None if self.version < (3, 3) else self
         message = Message(Message.PING_COMMAND, sequence=0, encrypt_for=maybe_self)
@@ -721,9 +731,14 @@ class TuyaDevice:
     async def _async_pong_received(self, message, device):
         self.last_pong = time.time()
 
-    async def async_update_state(self, state_message, _):
-        self._dps.update(state_message.payload["dps"])
-        _LOGGER.info("Received updated state {}: {}".format(self, self._dps))
+    async def async_gratuitous_update_state(self, state_message, _):
+        await self.async_update_state(state_message)
+        await self.update_entity_state_cb()
+
+    async def async_update_state(self, state_message, _=None):
+        if state_message.payload and state_message.payload["dps"]:
+            self._dps.update(state_message.payload["dps"])
+            _LOGGER.info("Received updated state {}: {}".format(self, self._dps))
 
     @property
     def state(self):
@@ -736,36 +751,58 @@ class TuyaDevice:
     async def _async_handle_message(self):
         try:
             response_data = await self.reader.readuntil(MAGIC_SUFFIX_BYTES)
-        except socket.error as e:
-            _LOGGER.error("Connection to {} failed: {}".format(self, e))
-            asyncio.ensure_future(self.async_disconnect())
-            return
-        except asyncio.IncompleteReadError as e:
-            _LOGGER.error("Incomplete read from: {} : {}".format(self, e))
-            return
-
-        try:
             message = Message.from_bytes(response_data, self.cipher)
         except InvalidMessage as e:
-            _LOGGER.error("Invalid message from {}: {}".format(self, e))
+            _LOGGER.debug("Invalid message from {}: {}".format(self, e))
         except MessageDecodeFailed as e:
-            _LOGGER.error("Failed to decrypt message from {}".format(self))
+            _LOGGER.debug("Failed to decrypt message from {}".format(self))
         else:
             _LOGGER.debug("Received message from {}: {}".format(self, message))
-            for c in self._handlers.get(message.command, []):
-                asyncio.ensure_future(c(message, self))
+            if message.sequence in self._listeners:
+                sem = self._listeners[message.sequence]
+                if isinstance(sem, asyncio.Semaphore):
+                    self._listeners[message.sequence] = message
+                    sem.release()
+            else:
+                for c in self._handlers.get(message.command, []):
+                    asyncio.ensure_future(c(message, self))
 
         asyncio.ensure_future(self._async_handle_message())
 
     async def _async_send(self, message, retries=4):
         try:
             await self.async_connect()
-        except (socket.timeout, socket.error, OSError) as e:
+            _LOGGER.debug("Sending to {}: {}".format(self, message))
+            self.writer.write(message.bytes())
+            await self.writer.drain()
+        except Exception as e:
             if retries == 0:
-                raise ConnectionException(
-                    "Failed to send data to {}".format(self)
-                ) from e
-            await self.async_connect()
+                if isinstance(e, socket.error):
+                    asyncio.ensure_future(self.async_disconnect())
+                    raise ConnectionException(
+                        "Connection to {} failed: {}".format(self, e)
+                    )
+                elif isinstance(e, asyncio.IncompleteReadError):
+                    raise InvalidMessage(
+                        "Incomplete read from: {} : {}".format(self, e)
+                    )
+                else:
+                    raise TuyaException("Failed to send data to {}".format(self))
+
+            if isinstance(e, socket.error):
+                _LOGGER.debug(
+                    "Retrying send due to error. Connection to {} failed: {}".format(
+                        self, e
+                    )
+                )
+            elif isinstance(e, asyncio.IncompleteReadError):
+                _LOGGER.debug(
+                    "Retrying send due to error. Incomplete read from: {} : {}. Partial data recieved: {}".format(
+                        self, e, e.partial
+                    )
+                )
+            else:
+                _LOGGER.debug(
+                    "Retrying send due to error. Failed to send data to {}".format(self)
+                )
             await self._async_send(message, retries=retries - 1)
-        _LOGGER.debug("Sending to {}: {}".format(self, message))
-        self.writer.write(message.bytes())
