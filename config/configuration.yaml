@@ -59,6 +59,13 @@ homeassistant:
 #     password: "opensesame"
 #     name: "Window"
 
+scrape:
+    - resource: http://192.168.1.30:1111/noise.html
+      scan_interval: 10
+      sensor:
+          - name: "AC Noise"
+            select: "span"
+
 sensor:
 #   - platform: scrape
 #     resource: http://10.0.0.161:1111/noise.html
