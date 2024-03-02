@@ -200,7 +200,7 @@ ios:
     - name: brightness_up
       background_color: "#ffffaa"
       label:
-        text: "Brighten"
+        text: "Brighter"
         color: "#000000"
       icon:
         icon: lightbulb-on
@@ -208,7 +208,7 @@ ios:
     - name: brightness_down
       background_color: "#cccc44"
       label:
-        text: "Dim"
+        text: "Dimmer"
         color: "#000000"
       icon:
         icon: lightbulb
