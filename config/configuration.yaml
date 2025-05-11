@@ -40,7 +40,7 @@ light:
       - light.living_color_lamp_3
       - light.string_lights
       - light.desk_lights
-      - light.bedroom
+#     - light.bedroom
   - platform: group
     name: Black Lamp
     entities:
@@ -134,21 +134,21 @@ ios:
 #        icon: bed-empty
 #        color: "#000000"
     - name: full_off
-      background_color: "#000000"
+      background_color: "#24294F"
       label:
         text: "Full Off"
-        color: "#ff4f00"
+        color: "#C9CBE5"
       icon:
         icon: lightbulb-off-outline
-        color: "#ff4f00"
+        color: "#C9CBE5"
     - name: full_on
-      background_color: "#ff4f00"
+      background_color: "#4F66A7"
       label:
         text: "Full On"
-        color: "#000000"
+        color: "#DBE0ED"
       icon:
         icon: lightbulb-on-outline
-        color: "#000000"
+        color: "#DBE0ED"
 #    - name: living_room_off
 #      background_color: "#000000"
 #      label:
@@ -165,86 +165,131 @@ ios:
 #      icon:
 #        icon: lamps
 #        color: "#000000"
-    - name: dining
-      background_color: "#00bb11"
+#    - name: dining
+#      background_color: "#6F9CCC"
+#      label:
+#        text: "Dining"
+#        color: "#E2EBF5"
+#      icon:
+#        icon: silverware-fork-knife
+#        color: "#E2EBF5"
+    - name: living_room_on
+      background_color: "#6F9CCC"
       label:
-        text: "Dining"
-        color: "#000000"
+        text: "Living Room"
+        color: "#E2EBF5"
       icon:
-        icon: silverware-fork-knife
-        color: "#000000"
+        icon: lamps
+        color: "#E2EBF5"
     - name: relax
-      background_color: "#00c0e3"
+      background_color: "#417FCF"
       label:
         text: "Relax"
-        color: "#000000"
+        color: "#D7E5F5"
       icon:
         icon: spa
-        color: "#000000"
+        color: "#D7E5F5"
     - name: theater_mode
-      background_color: "#c000d5"
+      background_color: "#828FA6"
       label:
         text: "Theater"
-        color: "#ffffff"
+        color: "#E3E6EA"
       icon:
         icon: filmstrip
-        color: "#ffffff"
+        color: "#E3E6EA"
     - name: work
-      background_color: "#ff7200"
+      background_color: "#6BA0AC"
       label:
         text: "Work"
-        color: "#ffffff"
+        color: "#DCE8EB"
       icon:
         icon: briefcase-outline
-        color: "#ffffff"
+        color: "#DCE8EB"
     - name: brightness_up
-      background_color: "#ffffaa"
+      background_color: "#C9CBE5"
       label:
         text: "Brighter"
-        color: "#000000"
+        color: "#24294F"
       icon:
         icon: lightbulb-on
-        color: "#000000"
+        color: "#24294F"
     - name: brightness_down
-      background_color: "#cccc44"
+      background_color: "#DBE0ED"
       label:
         text: "Dimmer"
-        color: "#000000"
+        color: "#4F66A7"
       icon:
         icon: lightbulb
-        color: "#000000"
+        color: "#4F66A7"
     - name: volume_up
-      background_color: "#ccccff"
+      background_color: "#E2EBF5"
       label:
         text: "Louder"
-        color: "#000000"
+        color: "#6F9CCC"
       icon:
         icon: volume-medium
-        color: "#000000"
+        color: "#6F9CCC"
     - name: volume_down
-      background_color: "#777799"
+      background_color: "#D7E5F5"
       label:
         text: "Softer"
-        color: "#000000"
+        color: "#417FCF"
       icon:
         icon: volume-low
-        color: "#000000"
+        color: "#417FCF"
     - name: play_pause
-      background_color: "#a9a9a9"
+      background_color: "#E6E9ED"
       label:
         text: "Play/Pause"
-        color: "#000000"
+        color: "#828FA6"
       icon:
         icon: play-pause
-        color: "#000000"
+        color: "#828FA6"
+
+    - name: play_in_living_room
+      background_color: "#24294F"
+      label:
+        text: "Play in Living Room"
+        color: "#C9CBE5"
+      icon:
+        icon: music-box
+        color: "#C9CBE5"
+    - name: play_in_bathroom
+      background_color: "#4F66A7"
+      label:
+        text: "Play In Bathroom"
+        color: "#DBE0ED"
+      icon:
+        icon: music-box-outline
+        color: "#DBE0ED"
+    - name: play_in_bedroom
+      background_color: "#6F9CCC"
+      label:
+        text: "Play in Bedroom"
+        color: "#E2EBF5"
+      icon:
+        icon: music-circle
+        color: "#E2EBF5"
+    - name: play_turntable
+      background_color: "#417FCF"
+      label:
+        text: "Play Turntable"
+        color: "#D7E5F5"
+      icon:
+        icon: record-player
+        color: "#D7E5F5"
+
+
+
     - name: toggle_color_sync
-      background_color: "#ff9191"
+      background_color: "#E0EBEE"
       label:
         text: "Toggle Color Sync"
-        color: "#000000"
+        color: "#6DA1AD"
       icon:
         icon: palette
-        color: "#000000"
+        color: "#6DA1AD"
+
 #    - name: toggle_game_color_sync
 #      background_color: "#deff91"
 #      label:

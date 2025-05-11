@@ -13,39 +13,6 @@
       icon: mdi:palette
       friendly_name: Sync What's Playing to Lights?
       state: 'off'
-    light.desk_lights:
-      supported_color_modes:
-      - onoff
-      friendly_name: Desk Lights
-      supported_features: 0
-      state: unavailable
-    light.bedroom:
-      supported_color_modes:
-      - brightness
-      color_mode: brightness
-      brightness: 13
-      is_hue_group: true
-      hue_scenes:
-      - Bright
-      - Tropical twilight
-      - Read
-      - Nightlight
-      - Energize
-      - Arctic aurora
-      - Dimmed
-      - Spring blossom
-      - Mixology
-      - Savanna sunset
-      - Concentrate
-      - Relax
-      hue_type: room
-      lights:
-      - Bedroom white lamp 1
-      dynamics: false
-      icon: mdi:lightbulb-group
-      friendly_name: Bedroom
-      supported_features: 40
-      state: 'on'
     light.living_color_lamp_1:
       min_color_temp_kelvin: 2000
       max_color_temp_kelvin: 6535
@@ -55,6 +22,9 @@
       - None
       - candle
       - fire
+      - unknown
+      - sparkle
+      - unknown
       - unknown
       supported_color_modes:
       - color_temp
@@ -73,6 +43,9 @@
       - None
       - candle
       - fire
+      - unknown
+      - sparkle
+      - unknown
       - unknown
       supported_color_modes:
       - color_temp
@@ -105,6 +78,9 @@
       - candle
       - fire
       - unknown
+      - sparkle
+      - unknown
+      - unknown
       supported_color_modes:
       - color_temp
       - xy
@@ -128,8 +104,6 @@
       state: 'on'
   icon: mdi:filmstrip
   metadata:
-    light.bedroom:
-      entity_only: true
     light.living_color_lamp_1:
       entity_only: true
     light.living_color_lamp_2:
@@ -145,21 +119,20 @@
       friendly_name: Sync What's Playing to Lights?
       state: 'off'
     light.living_room_lights:
+      min_color_temp_kelvin: 2000
+      max_color_temp_kelvin: 6535
       min_mireds: 153
       max_mireds: 500
+      effect_list:
+      - None
+      - candle
+      - fire
+      - sparkle
+      - unknown
       supported_color_modes:
       - color_temp
       - onoff
       - xy
-      entity_id:
-      - light.living_color_lamp_1
-      - light.living_color_lamp_2
-      - light.living_color_lamp_3
-      - light.string_lights
-      - light.desk_lights
-      icon: mdi:lightbulb-group
-      friendly_name: Living Room Lights
-      supported_features: 40
       color_mode: xy
       brightness: 255
       hs_color:
@@ -172,20 +145,50 @@
       xy_color:
       - 0.4498
       - 0.4059
+      effect: None
+      entity_id:
+      - light.living_color_lamp_1
+      - light.living_color_lamp_2
+      - light.living_color_lamp_3
+      - light.string_lights
+      - light.desk_lights
+      icon: mdi:lightbulb-group
+      friendly_name: Living Room Lights
+      supported_features: 44
       state: 'on'
-    light.bed_white_lamp_1:
+    light.bedroom:
       supported_color_modes:
       - brightness
+      is_hue_group: true
+      hue_scenes:
+      - Savanna sunset
+      - Relax
+      - Bright
+      - Mixology
+      - Dimmed
+      - Read
+      - Concentrate
+      - Spring blossom
+      - Energize
+      - Tropical twilight
+      - Nightlight
+      - Arctic aurora
+      hue_type: room
+      lights:
+      - Bedroom white lamp 1
+      - Hue white lamp 2
+      - Hue white lamp 3
+      - Hue white lamp 1
+      dynamics: false
+      icon: mdi:lightbulb-group
+      friendly_name: Bedroom
+      supported_features: 40
       color_mode: brightness
       brightness: 255
-      mode: normal
-      dynamics: none
-      friendly_name: Bedroom white lamp 1
-      supported_features: 40
       state: 'on'
   icon: mdi:lightbulb-on-outline
   metadata:
-    light.bed_white_lamp_1:
+    light.bedroom:
       entity_only: true
 - id: '1610994787395'
   name: Full Off
@@ -196,8 +199,16 @@
       friendly_name: Sync What's Playing to Lights?
       state: 'off'
     light.living_room_lights:
+      min_color_temp_kelvin: 2000
+      max_color_temp_kelvin: 6535
       min_mireds: 153
       max_mireds: 500
+      effect_list:
+      - None
+      - candle
+      - fire
+      - sparkle
+      - unknown
       supported_color_modes:
       - color_temp
       - onoff
@@ -210,19 +221,39 @@
       - light.desk_lights
       icon: mdi:lightbulb-group
       friendly_name: Living Room Lights
-      supported_features: 40
+      supported_features: 44
       state: 'off'
-    light.bed_white_lamp_1:
+    light.bedroom:
       supported_color_modes:
       - brightness
-      mode: normal
-      dynamics: none
-      friendly_name: Bedroom white lamp 1
+      is_hue_group: true
+      hue_scenes:
+      - Savanna sunset
+      - Relax
+      - Bright
+      - Mixology
+      - Dimmed
+      - Read
+      - Concentrate
+      - Spring blossom
+      - Energize
+      - Tropical twilight
+      - Nightlight
+      - Arctic aurora
+      hue_type: room
+      lights:
+      - Bedroom white lamp 1
+      - Hue white lamp 2
+      - Hue white lamp 3
+      - Hue white lamp 1
+      dynamics: false
+      icon: mdi:lightbulb-group
+      friendly_name: Bedroom
       supported_features: 40
       state: 'off'
   icon: mdi:lightbulb-off-outline
   metadata:
-    light.bed_white_lamp_1:
+    light.bedroom:
       entity_only: true
 - id: '1610994850307'
   name: Work
