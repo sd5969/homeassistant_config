@@ -79,3 +79,80 @@ work:
     metadata: {}
   mode: single
   icon: mdi:briefcase-outline
+brighter:
+  alias: Brighter
+  sequence:
+  - event: ios.action_fired
+    event_data:
+      actionID: brightness_up
+      actionName: brightness_up
+  mode: single
+  icon: mdi:lightbulb-on
+dimmer:
+  alias: Dimmer
+  sequence:
+  - event: ios.action_fired
+    event_data:
+      actionID: brightness_down
+      actionName: brightness_down
+  mode: single
+  icon: mdi:lightbulb
+louder:
+  alias: Louder
+  sequence:
+  - event: ios.action_fired
+    event_data:
+      actionID: volume_up
+      actionName: volume_up
+  mode: single
+  icon: mdi:volume-high
+softer:
+  alias: Softer
+  sequence:
+  - event: ios.action_fired
+    event_data:
+      actionID: volume_down
+      actionName: volume_down
+  mode: single
+  icon: mdi:volume-medium
+play_in_living_room:
+  alias: Play in Living Room
+  sequence:
+  - service: automation.trigger
+    data:
+      skip_condition: true
+    target:
+      entity_id: automation.sonos_i_living_room
+  mode: single
+  icon: mdi:music-box
+play_in_bedroom:
+  alias: Play in Bedroom
+  sequence:
+  - service: automation.trigger
+    data:
+      skip_condition: true
+    target:
+      entity_id: automation.sonos_ii_bedroom
+  mode: single
+  icon: mdi:music-circle
+play_in_bathroom:
+  alias: Play in Bathroom
+  sequence:
+  - service: automation.trigger
+    data:
+      skip_condition: true
+    target:
+      entity_id:
+      - automation.sonos_iii_bathroom
+  mode: single
+  icon: mdi:music-box-outline
+play_turntable:
+  alias: Play Turntable
+  sequence:
+  - service: automation.trigger
+    data:
+      skip_condition: true
+    target:
+      entity_id: automation.sonos_iv_turntable
+  mode: single
+  icon: mdi:record-player
