@@ -121,7 +121,7 @@
   action:
   - service: scene.turn_on
     target:
-      entity_id: scene.full_off
+      entity_id: scene.bedtime
     metadata: {}
   mode: single
 - id: '1681882371302'
@@ -533,3 +533,166 @@
     target:
       entity_id: media_player.living_room
   mode: single
+- id: '1763851360714'
+  alias: Alexa Relax
+  description: ''
+  trigger:
+  - platform: webhook
+    webhook_id: alexa_relax
+    allowed_methods:
+    - POST
+    - PUT
+    local_only: false
+  condition: []
+  action:
+  - service: scene.turn_on
+    target:
+      entity_id: scene.relax
+    metadata: {}
+  mode: single
+- id: '1764381757745'
+  alias: Arrive Home Transfer Spotify to Living Room
+  description: When I get home and Spotify is playing on my iPhone, move playback
+    to the Living Room Sonos.
+  trigger:
+  - platform: state
+    entity_id: person.sanjit
+    from: not_home
+    to: home
+  condition:
+  - condition: state
+    entity_id: media_player.spotify_sanjit_dutta
+    state: playing
+  - condition: template
+    value_template: '{{ state_attr(''media_player.spotify_sanjit_dutta'', ''source'')
+      == "iPhone" }}
+
+      '
+  - condition: state
+    entity_id: input_boolean.guest_mode
+    state: 'off'
+  action:
+  - delay:
+      hours: 0
+      minutes: 1
+      seconds: 30
+      milliseconds: 0
+  - service: media_player.play_media
+    data:
+      media_content_type: music
+      media_content_id: '{{ state_attr(''media_player.spotify_sanjit_dutta'', ''media_content_id'')
+        }}'
+    target:
+      entity_id: media_player.living_room
+  mode: single
+- id: '1767135639124'
+  alias: Alexa Living Room Lights
+  description: ''
+  trigger:
+  - platform: webhook
+    webhook_id: alexa_living_room_on
+    allowed_methods:
+    - POST
+    - PUT
+    local_only: false
+  condition: []
+  action:
+  - service: scene.turn_on
+    target:
+      entity_id: scene.living_room_on
+    metadata: {}
+  mode: single
+- id: '1767135670200'
+  alias: Alexa Work
+  description: ''
+  trigger:
+  - platform: webhook
+    webhook_id: alexa_work
+    allowed_methods:
+    - POST
+    - PUT
+    local_only: false
+  condition: []
+  action:
+  - service: scene.turn_on
+    target:
+      entity_id: scene.work
+    metadata: {}
+  mode: single
+- id: '1767135686662'
+  alias: Alexa Theater Mode
+  description: ''
+  trigger:
+  - platform: webhook
+    webhook_id: alexa_theater
+    allowed_methods:
+    - POST
+    - PUT
+    local_only: false
+  condition: []
+  action:
+  - service: scene.turn_on
+    target:
+      entity_id: scene.theater_mode
+    metadata: {}
+  mode: single
+- id: '1767226422197'
+  alias: Alexa Play in Bedroom
+  description: ''
+  trigger:
+  - platform: webhook
+    webhook_id: alexa_play_in_bedroom
+    allowed_methods:
+    - POST
+    - PUT
+    local_only: false
+  condition: []
+  action:
+  - service: script.play_in_bedroom
+    data: {}
+  mode: restart
+- id: '1767226481592'
+  alias: Alexa Play in Bathroom
+  description: ''
+  trigger:
+  - platform: webhook
+    webhook_id: alexa_play_in_bathroom
+    allowed_methods:
+    - POST
+    - PUT
+    local_only: false
+  condition: []
+  action:
+  - service: script.play_in_bathroom
+    data: {}
+  mode: restart
+- id: '1767226504302'
+  alias: Alexa Play in Living Room
+  description: ''
+  trigger:
+  - platform: webhook
+    webhook_id: alexa_play_in_living_room
+    allowed_methods:
+    - POST
+    - PUT
+    local_only: false
+  condition: []
+  action:
+  - service: script.play_in_living_room
+    data: {}
+  mode: restart
+- id: '1773592069455'
+  alias: Alexa Play Turntable
+  description: ''
+  trigger:
+  - platform: webhook
+    webhook_id: alexa_play_turntable
+    allowed_methods:
+    - POST
+    - PUT
+    local_only: false
+  condition: []
+  action:
+  - service: script.play_turntable
+    data: {}
+  mode: restart

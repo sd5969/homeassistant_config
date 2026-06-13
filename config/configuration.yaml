@@ -14,7 +14,10 @@ automation: !include automations.yaml
 script: !include scripts.yaml
 scene: !include scenes.yaml
 
-# http:
+http:
+    use_x_forwarded_for: true
+    trusted_proxies:
+      - 127.0.0.1
 #   ssl_certificate: /config/certs/fullchain.pem
 #   ssl_key: /config/certs/privkey.pem
 
@@ -63,12 +66,21 @@ homeassistant:
     media_dirs:
         local: /config/media
 
+# this is a legacy config. new cameras should be added by UI only (3/15/26)
+
 # camera:
 #   - platform: mjpeg
 #     mjpeg_url: http://192.168.1.30:8081/cam_pic_new.php
 #     username: "picam"
 #     password: "opensesame"
 #     name: "Window"
+
+# camera:
+#   - platform: generic
+#     name: "Window Cam"
+#     still_image_url: http://localhost:1984/api/frame.jpeg?src=window_cam
+#     stream_source: rtsp://localhost:8554/window_cam
+#     verify_ssl: false
 
 scrape:
     - resource: http://127.0.0.1:1111/noise.html
@@ -319,3 +331,8 @@ ios:
 #    access_token: 2lRDw1wuRbuvjfbMKgyrNQ
 #    id: 500700082cf432328ee3
 #    type: T2118 # T2130
+
+
+input_boolean:
+  alexa_trigger:
+    name: Alexa Trigger
