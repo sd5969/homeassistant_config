@@ -696,3 +696,21 @@
   - service: script.play_turntable
     data: {}
   mode: restart
+- id: '1785986631329'
+  alias: Alexa Turn Down
+  description: ''
+  triggers:
+  - webhook_id: alexa_turn_down
+    allowed_methods:
+    - POST
+    - PUT
+    local_only: false
+    trigger: webhook
+  conditions: []
+  actions:
+  - metadata: {}
+    action: scene.turn_on
+    data: {}
+    target:
+      entity_id: scene.turn_down
+  mode: single

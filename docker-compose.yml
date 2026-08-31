@@ -9,4 +9,4 @@ services:
             - /etc/localtime:/etc/localtime:ro
         network_mode: host
         restart: always
-        image: homeassistant/home-assistant
+        image: homeassistant/home-assistant:2026.6.2

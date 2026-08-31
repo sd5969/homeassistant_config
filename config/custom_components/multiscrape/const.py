@@ -29,23 +29,21 @@ CONF_FORM_SUBMIT = "form_submit"
 CONF_FORM_SELECT = "select"
 CONF_FORM_INPUT = "input"
 CONF_FORM_INPUT_FILTER = "input_filter"
-CONF_FORM_RESOURCE = "resource"
 CONF_FORM_SUBMIT_ONCE = "submit_once"
 CONF_FORM_RESUBMIT_ERROR = "resubmit_on_error"
+CONF_FORM_VARIABLES = "variables"
 CONF_LOG_RESPONSE = "log_response"
+CONF_EXTRACT = "extract"
+EXTRACT_OPTIONS = ["text", "content", "tag"]
 DEFAULT_PARSER = "lxml"
+DEFAULT_EXTRACT = "text"
 
 CONF_FIELDS = "fields"
 
-SCRAPER_IDX = "scraper_idx"
-PLATFORM_IDX = "platform_idx"
+SCRAPER_ID = "scraper_id"
+ENTITY_KEY = "entity_key"
 
-COORDINATOR = "coordinator"
-SCRAPER = "scraper"
-
-SCRAPER_DATA = "scraper"
-
-METHODS = ["POST", "GET", "post", "get"]
+METHODS = ["POST", "GET", "PUT"]
 DEFAULT_SEPARATOR = ","
 
 LOG_ERROR = "error"
@@ -64,3 +62,7 @@ LOG_LEVELS = {
 
 DEFAULT_ON_ERROR_LOG = LOG_ERROR
 DEFAULT_ON_ERROR_VALUE = CONF_ON_ERROR_VALUE_NONE
+
+# Retry configuration
+MAX_RETRIES = 3
+RETRY_DELAY_SECONDS = 30

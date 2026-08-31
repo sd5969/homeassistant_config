@@ -156,3 +156,12 @@ play_turntable:
       entity_id: automation.sonos_iv_turntable
   mode: single
   icon: mdi:record-player
+turn_down:
+  sequence:
+  - action: scene.turn_on
+    metadata: {}
+    target:
+      entity_id: scene.turn_down
+    data: {}
+  alias: Turn down
+  description: ''

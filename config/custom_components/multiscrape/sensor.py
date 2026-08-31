@@ -3,35 +3,25 @@ from __future__ import annotations
 
 import logging
 
-from homeassistant.components.sensor import SensorDeviceClass
-from homeassistant.components.sensor import SensorEntity
+from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
 from homeassistant.components.sensor.helpers import async_parse_date_datetime
-from homeassistant.const import CONF_DEVICE_CLASS
-from homeassistant.const import CONF_FORCE_UPDATE
-from homeassistant.const import CONF_ICON
-from homeassistant.const import CONF_NAME
-from homeassistant.const import CONF_RESOURCE_TEMPLATE
-from homeassistant.const import CONF_UNIQUE_ID
-from homeassistant.const import CONF_UNIT_OF_MEASUREMENT
-from homeassistant.const import Platform
-from homeassistant.const import STATE_UNAVAILABLE
+from homeassistant.const import (CONF_DEVICE_CLASS, CONF_FORCE_UPDATE,
+                                 CONF_ICON, CONF_NAME, CONF_UNIQUE_ID,
+                                 CONF_UNIT_OF_MEASUREMENT, Platform)
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import PlatformNotReady
 from homeassistant.helpers.entity import async_generate_entity_id
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.typing import ConfigType
-from homeassistant.helpers.typing import DiscoveryInfoType
+from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 from homeassistant.util import slugify
 
 from . import async_get_config_and_coordinator
-from .const import CONF_ON_ERROR_VALUE_DEFAULT
-from .const import CONF_ON_ERROR_VALUE_LAST
-from .const import CONF_ON_ERROR_VALUE_NONE
-from .const import CONF_PICTURE
-from .const import CONF_SENSOR_ATTRS
-from .const import CONF_STATE_CLASS
-from .const import LOG_LEVELS
+from .const import (CONF_ON_ERROR_VALUE_DEFAULT, CONF_ON_ERROR_VALUE_LAST,
+                    CONF_ON_ERROR_VALUE_NONE, CONF_PICTURE, CONF_SENSOR_ATTRS,
+                    CONF_STATE_CLASS, LOG_LEVELS)
+from .coordinator import MultiscrapeDataUpdateCoordinator
 from .entity import MultiscrapeEntity
+from .scraper import Scraper
 from .selector import Selector
 
 _LOGGER = logging.getLogger(__name__)
@@ -64,7 +54,6 @@ async def async_setup_platform(
     device_class = conf.get(CONF_DEVICE_CLASS)
     state_class = conf.get(CONF_STATE_CLASS)
     force_update = conf.get(CONF_FORCE_UPDATE)
-    resource_template = conf.get(CONF_RESOURCE_TEMPLATE)
     icon_template = conf.get(CONF_ICON)
     picture = conf.get(CONF_PICTURE)
 
@@ -86,7 +75,6 @@ async def async_setup_platform(
                 device_class,
                 state_class,
                 force_update,
-                resource_template,
                 icon_template,
                 picture,
                 sensor_selector,
@@ -101,16 +89,15 @@ class MultiscrapeSensor(MultiscrapeEntity, SensorEntity):
 
     def __init__(
         self,
-        hass,
-        coordinator,
-        scraper,
-        unique_id,
+        hass: HomeAssistant,
+        coordinator: MultiscrapeDataUpdateCoordinator,
+        scraper: Scraper,
+        unique_id: str | None,
         name,
         unit_of_measurement,
         device_class,
         state_class,
         force_update,
-        resource_template,
         icon_template,
         picture,
         sensor_selector,
@@ -123,7 +110,6 @@ class MultiscrapeSensor(MultiscrapeEntity, SensorEntity):
             scraper,
             name,
             device_class,
-            resource_template,
             force_update,
             icon_template,
             picture,
@@ -147,9 +133,11 @@ class MultiscrapeSensor(MultiscrapeEntity, SensorEntity):
 
         try:
             if self.coordinator.update_error is True:
-                raise ValueError("Skipped scraping because data couldn't be updated")
+                raise ValueError(
+                    "Skipped scraping because data couldn't be updated")
 
-            value = self.scraper.scrape(self._sensor_selector, self._name)
+            value = self.scraper.scrape(
+                self._sensor_selector, self._name, context=self.coordinator.scrape_context)
             _LOGGER.debug(
                 "%s # %s # Selected: %s", self.scraper.name, self._name, value
             )
@@ -164,11 +152,8 @@ class MultiscrapeSensor(MultiscrapeEntity, SensorEntity):
                 self._attr_native_value = async_parse_date_datetime(
                     value, self.entity_id, self.device_class
                 )
-
-            if self._icon_template:
-                self._set_icon(value)
         except Exception as exception:
-            self.coordinator.notify_scrape_exception()
+            self.coordinator.request_reauth()
 
             if self._sensor_selector.on_error.log not in [False, "false", "False"]:
                 level = LOG_LEVELS[self._sensor_selector.on_error.log]
@@ -181,7 +166,7 @@ class MultiscrapeSensor(MultiscrapeEntity, SensorEntity):
                 )
 
             if self._sensor_selector.on_error.value == CONF_ON_ERROR_VALUE_NONE:
-                self._attr_native_value = STATE_UNAVAILABLE
+                self._scrape_error = True
                 _LOGGER.debug(
                     "%s # %s # On-error, set value to None",
                     self.scraper.name,
@@ -194,6 +179,8 @@ class MultiscrapeSensor(MultiscrapeEntity, SensorEntity):
                     self._name,
                     self._attr_native_value,
                 )
+                if self._attr_native_value is None:
+                    self._scrape_error = True
                 return
             elif self._sensor_selector.on_error.value == CONF_ON_ERROR_VALUE_DEFAULT:
                 self._attr_native_value = self._sensor_selector.on_error_default
@@ -203,3 +190,6 @@ class MultiscrapeSensor(MultiscrapeEntity, SensorEntity):
                     self._name,
                     self._sensor_selector.on_error_default,
                 )
+        # determine icon after exception so it's also set for on_error cases
+        if self._icon_template:
+            self._set_icon(self._attr_native_value)

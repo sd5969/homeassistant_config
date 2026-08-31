@@ -1,24 +1,35 @@
+"""Abstraction of the CSS selectors defined in the config."""
 from collections import namedtuple
 
-from homeassistant.const import CONF_VALUE_TEMPLATE
+from homeassistant.const import CONF_NAME, CONF_VALUE_TEMPLATE
 
-from .const import CONF_ATTR
-from .const import CONF_ON_ERROR
-from .const import CONF_ON_ERROR_DEFAULT
-from .const import CONF_ON_ERROR_LOG
-from .const import CONF_ON_ERROR_VALUE
-from .const import CONF_SELECT
-from .const import CONF_SELECT_LIST
-from .const import DEFAULT_ON_ERROR_LOG
-from .const import DEFAULT_ON_ERROR_VALUE
+from .const import (CONF_ATTR, CONF_EXTRACT, CONF_ON_ERROR,
+                    CONF_ON_ERROR_DEFAULT, CONF_ON_ERROR_LOG,
+                    CONF_ON_ERROR_VALUE, CONF_SELECT, CONF_SELECT_LIST,
+                    DEFAULT_ON_ERROR_LOG, DEFAULT_ON_ERROR_VALUE)
 
 
 class Selector:
+    """Implementation of a Selector handling the css selectors from the config."""
+
     def __init__(self, hass, conf):
+        """Initialize a Selector."""
+        self.name = conf.get(CONF_NAME)
+
         self.select_template = conf.get(CONF_SELECT)
+        if self.select_template and self.select_template.hass is None:
+            self.select_template.hass = hass
+
         self.select_list_template = conf.get(CONF_SELECT_LIST)
+        if self.select_list_template and self.select_list_template.hass is None:
+            self.select_list_template.hass = hass
+
         self.attribute = conf.get(CONF_ATTR)
         self.value_template = conf.get(CONF_VALUE_TEMPLATE)
+        if self.value_template and self.value_template.hass is None:
+            self.value_template.hass = hass
+
+        self.extract = conf.get(CONF_EXTRACT)
         self.on_error = self.create_on_error(conf.get(CONF_ON_ERROR), hass)
 
         if (
@@ -30,14 +41,8 @@ class Selector:
                 "Selector error: either select, select_list or a value_template should be provided."
             )
 
-        if self.value_template is not None:
-            self.value_template.hass = hass
-        if self.select_template is not None:
-            self.select_template.hass = hass
-        elif self.select_list_template is not None:
-            self.select_list_template.hass = hass
-
     def create_on_error(self, conf, hass):
+        """Determine from config what to do in case of scrape errors."""
         On_Error = namedtuple(
             "On_Error",
             f"{CONF_ON_ERROR_LOG} {CONF_ON_ERROR_VALUE} {CONF_ON_ERROR_DEFAULT}",
@@ -56,20 +61,27 @@ class Selector:
 
     @property
     def is_list(self):
+        """Determine whether this selector is a list selector."""
         return self.select_list_template is not None
 
     @property
     def element(self):
+        """Render the select template and return the CSS selector for a single element."""
         return self.select_template.async_render(parse_result=True)
 
     @property
     def list(self):
+        """Render the select template and return the CSS selector for a list of elements."""
         return self.select_list_template.async_render(parse_result=True)
 
     @property
     def just_value(self):
+        """Determine if this selector define a static value and no select is required."""
         return not self.select_list_template and not self.select_template
 
     @property
     def on_error_default(self):
+        """Return the default on_error value as defined in the config."""
+        if self.on_error.default is None:
+            return None
         return self.on_error.default.async_render(parse_result=True)

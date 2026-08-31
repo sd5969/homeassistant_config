@@ -4,30 +4,23 @@ from __future__ import annotations
 import logging
 
 from homeassistant.components.binary_sensor import BinarySensorEntity
-from homeassistant.const import CONF_DEVICE_CLASS
-from homeassistant.const import CONF_FORCE_UPDATE
-from homeassistant.const import CONF_ICON
-from homeassistant.const import CONF_NAME
-from homeassistant.const import CONF_RESOURCE_TEMPLATE
-from homeassistant.const import CONF_UNIQUE_ID
-from homeassistant.const import Platform
-from homeassistant.const import STATE_UNAVAILABLE
+from homeassistant.const import (CONF_DEVICE_CLASS, CONF_FORCE_UPDATE,
+                                 CONF_ICON, CONF_NAME, CONF_UNIQUE_ID,
+                                 Platform)
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import PlatformNotReady
 from homeassistant.helpers.entity import async_generate_entity_id
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.typing import ConfigType
-from homeassistant.helpers.typing import DiscoveryInfoType
+from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 from homeassistant.util import slugify
 
 from . import async_get_config_and_coordinator
-from .const import CONF_ON_ERROR_VALUE_DEFAULT
-from .const import CONF_ON_ERROR_VALUE_LAST
-from .const import CONF_ON_ERROR_VALUE_NONE
-from .const import CONF_PICTURE
-from .const import CONF_SENSOR_ATTRS
-from .const import LOG_LEVELS
+from .const import (CONF_ON_ERROR_VALUE_DEFAULT, CONF_ON_ERROR_VALUE_LAST,
+                    CONF_ON_ERROR_VALUE_NONE, CONF_PICTURE, CONF_SENSOR_ATTRS,
+                    LOG_LEVELS)
+from .coordinator import MultiscrapeDataUpdateCoordinator
 from .entity import MultiscrapeEntity
+from .scraper import Scraper
 from .selector import Selector
 
 ENTITY_ID_FORMAT = Platform.BINARY_SENSOR + ".{}"
@@ -54,11 +47,11 @@ async def async_setup_platform(
         raise PlatformNotReady
 
     sensor_name = conf.get(CONF_NAME)
-    _LOGGER.debug("%s # %s # Setting up binary sensor", scraper.name, sensor_name)
+    _LOGGER.debug("%s # %s # Setting up binary sensor",
+                  scraper.name, sensor_name)
     unique_id = conf.get(CONF_UNIQUE_ID)
     device_class = conf.get(CONF_DEVICE_CLASS)
     force_update = conf.get(CONF_FORCE_UPDATE)
-    resource_template = conf.get(CONF_RESOURCE_TEMPLATE)
     icon_template = conf.get(CONF_ICON)
     picture = conf.get(CONF_PICTURE)
 
@@ -78,7 +71,6 @@ async def async_setup_platform(
                 sensor_name,
                 device_class,
                 force_update,
-                resource_template,
                 icon_template,
                 picture,
                 sensor_selector,
@@ -93,20 +85,18 @@ class MultiscrapeBinarySensor(MultiscrapeEntity, BinarySensorEntity):
 
     def __init__(
         self,
-        hass,
-        coordinator,
-        scraper,
-        unique_id,
+        hass: HomeAssistant,
+        coordinator: MultiscrapeDataUpdateCoordinator,
+        scraper: Scraper,
+        unique_id: str | None,
         name,
         device_class,
         force_update,
-        resource_template,
         icon_template,
         picture,
         sensor_selector,
         attribute_selectors,
     ):
-
         """Initialize a multiscrape binary sensor."""
         super().__init__(
             hass,
@@ -114,7 +104,6 @@ class MultiscrapeBinarySensor(MultiscrapeEntity, BinarySensorEntity):
             scraper,
             name,
             device_class,
-            resource_template,
             force_update,
             icon_template,
             picture,
@@ -136,18 +125,23 @@ class MultiscrapeBinarySensor(MultiscrapeEntity, BinarySensorEntity):
 
         try:
             if self.coordinator.update_error is True:
-                raise ValueError("Skipped scraping because data couldn't be updated")
+                raise ValueError(
+                    "Skipped scraping because data couldn't be updated")
 
-            value = self.scraper.scrape(self._sensor_selector, self._name)
+            value = self.scraper.scrape(
+                self._sensor_selector, self._name, context=self.coordinator.scrape_context)
             try:
                 self._attr_is_on = bool(int(value))
-            except ValueError:
-                self._attr_is_on = {
-                    "true": True,
-                    "on": True,
-                    "open": True,
-                    "yes": True,
-                }.get(value.lower(), False)
+            except (ValueError, TypeError):
+                if isinstance(value, str):
+                    self._attr_is_on = {
+                        "true": True,
+                        "on": True,
+                        "open": True,
+                        "yes": True,
+                    }.get(value.lower(), False)
+                else:
+                    self._attr_is_on = bool(value)
 
             _LOGGER.debug(
                 "%s # %s # Selected: %s, set sensor to: %s",
@@ -156,11 +150,8 @@ class MultiscrapeBinarySensor(MultiscrapeEntity, BinarySensorEntity):
                 value,
                 self._attr_is_on,
             )
-
-            if self._icon_template:
-                self._set_icon(value)
         except Exception as exception:
-            self.coordinator.notify_scrape_exception()
+            self.coordinator.request_reauth()
 
             if self._sensor_selector.on_error.log not in [False, "false", "False"]:
                 level = LOG_LEVELS[self._sensor_selector.on_error.log]
@@ -173,7 +164,7 @@ class MultiscrapeBinarySensor(MultiscrapeEntity, BinarySensorEntity):
                 )
 
             if self._sensor_selector.on_error.value == CONF_ON_ERROR_VALUE_NONE:
-                self._attr_native_value = STATE_UNAVAILABLE
+                self._scrape_error = True
                 _LOGGER.debug(
                     "%s # %s # On-error, set value to None",
                     self.scraper.name,
@@ -184,14 +175,31 @@ class MultiscrapeBinarySensor(MultiscrapeEntity, BinarySensorEntity):
                     "%s # %s # On-error, keep old value: %s",
                     self.scraper.name,
                     self._name,
-                    self._attr_native_value,
+                    self._attr_is_on,
                 )
                 return
             elif self._sensor_selector.on_error.value == CONF_ON_ERROR_VALUE_DEFAULT:
-                self._attr_native_value = self._sensor_selector.on_error_default
+                default_value = self._sensor_selector.on_error_default
+                # Convert default value to boolean using the same logic as regular values
+                try:
+                    self._attr_is_on = bool(int(default_value))
+                except (ValueError, TypeError):
+                    if isinstance(default_value, str):
+                        self._attr_is_on = {
+                            "true": True,
+                            "on": True,
+                            "open": True,
+                            "yes": True,
+                        }.get(default_value.lower(), False)
+                    else:
+                        self._attr_is_on = bool(default_value)
                 _LOGGER.debug(
-                    "%s # %s # On-error, set default value: %s",
+                    "%s # %s # On-error, set default value: %s (converted to: %s)",
                     self.scraper.name,
                     self._name,
-                    self._sensor_selector.on_error_default,
+                    default_value,
+                    self._attr_is_on,
                 )
+        # determine icon after exception so it's also set for on_error cases
+        if self._icon_template:
+            self._set_icon(self._attr_is_on)
